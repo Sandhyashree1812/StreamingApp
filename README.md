@@ -8,7 +8,8 @@ Stream premium video content, host live watch parties, and manage your catalogue
 StreamingApp — Overall Project Architecture:
 
 
-<img width="352" height="332" alt="Architecture-1" src="https://github.com/user-attachments/assets/327ce3ad-3c2b-41f0-bad7-1b9f82cb099b" />   <img width="374" height="340" alt="Architecture-2" src="https://github.com/user-attachments/assets/cefeda49-0618-47b3-819a-c9ae18c50f4c" />
+<img width="352" height="332" alt="Architecture-1" src="https://github.com/user-attachments/assets/327ce3ad-3c2b-41f0-bad7-1b9f82cb099b" /> 
+<img width="374" height="340" alt="Architecture-2" src="https://github.com/user-attachments/assets/cefeda49-0618-47b3-819a-c9ae18c50f4c" />
 
 
 The StreamingApp is a MERN-based application consisting of five application services:
