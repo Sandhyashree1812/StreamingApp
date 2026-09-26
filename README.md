@@ -2,7 +2,19 @@
 
 Stream premium video content, host live watch parties, and manage your catalogue with a modern microservice architecture. The platform now ships with a production-ready admin portal, real-time chat, S3-backed adaptive streaming, and a redesigned cinematic frontend experience.
 
-## Architecture
+## Architecture 
+
+
+StreamingApp — Overall Project Architecture
+<img width="352" height="332" alt="Architecture-1" src="https://github.com/user-attachments/assets/327ce3ad-3c2b-41f0-bad7-1b9f82cb099b" /> 
+<img width="374" height="340" alt="Architecture-2" src="https://github.com/user-attachments/assets/cefeda49-0618-47b3-819a-c9ae18c50f4c" />
+
+
+The StreamingApp is a MERN-based application consisting of five application services:
+
+<img width="428" height="188" alt="image" src="https://github.com/user-attachments/assets/21f74548-c80e-4d21-9362-355909d4dafd" /> 
+
+
 
 | Service | Port | Description |
 | --- | --- | --- |
@@ -13,7 +25,7 @@ Stream premium video content, host live watch parties, and manage your catalogue
 | `frontend` | 3000 | React SPA with revamped UI and integrated chat |
 | `mongo` | 27017 | Shared MongoDB instance |
 
-All backend services share common database models and utilities through `backend/common`.
+All backend services share common database models and utilities through `backend/common`. 
 
 ## Environment Configuration
 
