@@ -11,6 +11,7 @@ StreamingApp — Overall Project Architecture:
 
 
 <img width="352" height="332" alt="Architecture-1" src="https://github.com/user-attachments/assets/327ce3ad-3c2b-41f0-bad7-1b9f82cb099b" /> 
+
 <img width="374" height="340" alt="Architecture-2" src="https://github.com/user-attachments/assets/cefeda49-0618-47b3-819a-c9ae18c50f4c" />
 
 
@@ -59,10 +60,217 @@ Phase 2 — Docker Containerization
 
 Convert each of the 5 application components into a Docker image that can run independently.
 
+Step 1 — Repository structure
+Run: dir
+
+<img width="545" height="208" alt="image" src="https://github.com/user-attachments/assets/f467fae7-3581-4927-abd1-a002e835209e" />
+
+Step 2 - Check Backend Services
+Run: dir .\backend
+
+<img width="428" height="182" alt="image" src="https://github.com/user-attachments/assets/291bee0a-f58c-405a-9d78-75f25427f065" /> 
+<img width="234" height="104" alt="image" src="https://github.com/user-attachments/assets/e79ac7a8-205c-4e54-8bae-204a45472c9c" />
+
+Inside backend:
+
+<img width="184" height="58" alt="image" src="https://github.com/user-attachments/assets/c7bb6844-2fba-4df4-adfe-71da00a4f99d" />
+
+So we have: 1 frontend + 4 backend microservices + MongoDB
+
+============================ 
+
+Step 3 — Check Dockerfiles and package.json
+
+Checking for frontend:
+Run: 
+Get-ChildItem .\backend -Recurse -File |
+Where-Object { $_.Name -eq "Dockerfile" -or $_.Name -eq "package.json" } |
+Select-Object FullName
+
+
+<img width="635" height="235" alt="image" src="https://github.com/user-attachments/assets/d3febb50-bb14-4231-8f75-c1109fa20b35" />
+
+Step 4 - Checking for backend:
+
+Run:
+Get-ChildItem .\frontend -Recurse -File |
+Where-Object { $_.Name -eq "Dockerfile" -or $_.Name -eq "package.json" } |
+Select-Object FullName
+
+<img width="482" height="167" alt="image" src="https://github.com/user-attachments/assets/736c98a2-3ab0-4f04-a871-f4adef6aa831" />
+
+ Step 5 - Read the Frontend Dockerfile
+displays the contents of the existing Dockerfile.
+Run:
+Get-Content .\frontend\Dockerfile
+
+<img width="461" height="426" alt="image" src="https://github.com/user-attachments/assets/137f4f82-7519-4582-8b68-1b61a59fcb3e" /> 
+
+================ 
+
+Step 6 - Check frontend package.json
+
+Run:  Get-Content .\frontend\package.json
+
+<img width="614" height="395" alt="image" src="https://github.com/user-attachments/assets/1d2ba4be-803a-4381-af64-7c21d9bbf6fd" /> 
+
+<img width="398" height="245" alt="image" src="https://github.com/user-attachments/assets/39d4c604-e616-4225-8ac9-280e958b08d7" />
 
 
 
+Now we have both the frontend Dockerfile and the frontend package.json  
 
+===================  
+
+
+step 7 - Check .env.example, as We want to see the project's existing environment-variable definitions.
+
+ Run: Get-Content .\.env.example
+
+ <img width="438" height="284" alt="image" src="https://github.com/user-attachments/assets/590199b3-0a56-4616-aabf-be199f90b0d4" /> 
+
+ ======================= 
+
+ Step 8 - Understand the Environment Configuration:
+
+   . file contains four groups: 
+   Shared
+   AWS
+   Services
+   Frontend build-time values 
+
+ 1. Shared configuration has the below client URLs:
+     CLIENT_URLS=http://localhost:3000
+     JWT_SECRET=changeme
+     MONGO_DB=streamingapp 
+
+   2. CLIENT_URLS=http://localhost:3000 :
+      tells the backend that the frontend is currently available at: http://localhost:3000
+
+   3. So the relationship is:
+
+         Browser
+            ↓
+      localhost:3000
+            ↓
+         Frontend
+
+   4. JWT_SECRET: JWT_SECRET= changeme :
+       JWT is commonly used for authentication.
+       The backend uses the secret to sign/verify authentication tokens.
+
+  5. MONGO_DB: MONGO_DB=streamingapp, the MongoDB database name.
+  
+  6. it can be actually seen as below:
+
+     Backend services
+             ↓
+         MongoDB
+             ↓
+      streamingapp database
+     -----------------------------
+  ----------------------------
+
+   2. AWS configuration
+         AWS S3: is likely involved in storing streaming-related objects/content.
+
+--------------------------------- 
+---------------------------------
+   3. Backend service ports:
+     AUTH_PORT=3001
+     STREAMING_PORT=3002
+
+------------------------------------
+------------------------------------ 
+
+4. Frontend build-time values:
+
+   So currently the frontend is configured to communicate like as below:
+
+Frontend
+   │
+   ├── Auth API
+   │      http://localhost:3001/api
+   │
+   ├── Streaming API
+   │      http://localhost:3002/api
+   │
+   └── Streaming public URL
+          http://localhost:3002 
+
+========================================= 
+========================================= 
+
+Step 9: Backend Dockerfiles: 
+
+   Run: Get-Content .\backend\adminService\Dockerfile
+
+   <img width="461" height="187" alt="image" src="https://github.com/user-attachments/assets/bf8e748c-3a30-439e-b8cf-8307d21c3973" /> 
+
+   this has:
+   package.json
+     ↓
+   npm install --production
+     ↓
+   node_modules
+
+----------------------- 
+
+   Overall flow is:
+   Docker container starts
+       ↓
+   npm run start
+       ↓
+   Admin Service
+       ↓
+   Port 3003 
+
+   ======================= 
+
+   Inspecting the Second Backend Service:
+
+   Run: Get-Content .\backend\authService\Dockerfile 
+
+   
+   <img width="673" height="206" alt="image" src="https://github.com/user-attachments/assets/98339174-f5e8-49da-8306-cc8da4a906e1" />
+
+
+
+   The Auth service is a Node.js application, so we start with Node.js 18. :
+
+   Node.js 18
+     +
+ Alpine Linux
+     ↓
+ Base container 
+ ---------------- 
+ 
+ the Auth service uses: 3001
+
+ ------------------------------- 
+
+
+Admin vs Auth
+Now we can compare the two:
+
+ <img width="382" height="179" alt="image" src="https://github.com/user-attachments/assets/8a962135-1da9-41cc-8eee-0e6db5850f99" />
+
+
+===================== 
+================== 
+
+chatService:
+
+Run: Get-Content .\backend\chatService\Dockerfile 
+
+<img width="468" height="205" alt="image" src="https://github.com/user-attachments/assets/c8490ad9-d261-4fca-a4d8-7fd1d068710c" />
+
+
+
+ 
+========================================
+****************************************
+===================================
 
 ## Environment Configuration
 
