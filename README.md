@@ -416,8 +416,219 @@ Run: docker compose ps
 <img width="640" height="255" alt="image" src="https://github.com/user-attachments/assets/43f5e147-4a32-4186-bdf3-603c3029b94f" />
 
 
+ ============================= 
 
-****************************************
+ Open your browser and enter:
+
+http://localhost:3000 , You should get the StreamingApp frontend.
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/cdcab8fa-1387-4589-8614-02711877ed9d" />
+
+
+Note: Your Compose file contains:
+ 
+ports: 
+    - "3000:80"
+
+. So, 3000 is the port you use in your browser, while Nginx listens on port 80 inside the container. 
+
+. It works as below:
+
+Your Windows browser
+        ↓
+localhost:3000
+        ↓
+Frontend Docker container
+        ↓
+Nginx :80
+        ↓
+React application 
+
+================================== 
+================================ 
+
+Phase 2 – Frontend Running Successfully
+**************************************** 
+
+
+Step 13 - Verify the Backend:
+
+Step 13A: Find the Auth Service files 
+
+Run: Get-ChildItem .\backend\authService -File | Select-Object Name 
+
+
+
+<img width="557" height="196" alt="image" src="https://github.com/user-attachments/assets/95139763-bd5d-4987-85bf-e02c683e6d25" />
+
+Step 13B: Inspect the Auth routes 
+
+Run: Get-Content .\backend\authService\index.js, to see which routes the Auth Service actually provides
+
+
+<img width="611" height="410" alt="image" src="https://github.com/user-attachments/assets/1bcf7da1-5fbb-481f-83e1-314966b490e2" /> 
+
+Step 13C: Test Auth Service health
+
+Open this in your browser: http://localhost:3001/health
+
+<img width="441" height="228" alt="image" src="https://github.com/user-attachments/assets/b4fd90b1-b1df-4810-bb20-d0cbcda094bb" />  
+
+. What this tests is:
+Browser
+   ↓
+localhost:3001
+   ↓
+Auth Docker container
+   ↓
+Express
+   ↓
+/health route
+
+============ 
+============ 
+
+. This confirms:
+
+Browser
+   ↓
+localhost:3001
+   ↓
+Auth Docker container
+   ↓
+Express application
+   ↓
+/health
+   ↓
+{"status":"OK"} 
+
+======================================== 
+================================== 
+
+Phase 2 — Step 13: Test Streaming Service
+
+Now we'll check the second backend service.
+
+Open: http://localhost:3002 
+
+<img width="221" height="107" alt="image" src="https://github.com/user-attachments/assets/e9ed35bb-8e02-4ff5-931a-bd0414c82efe" />
+
+That means the Streaming Service is reachable, but it doesn't define a route for /.
+
+Therefore, Streaming Service is reachable. 
+
+. Checking Next: Admin Service 
+
+Open: http://localhost:3003
+
+<img width="208" height="107" alt="image" src="https://github.com/user-attachments/assets/0e3d9346-bed8-4ab0-a20c-94dc6ad17922" />
+
+Again, this means the server responded but does not define a root / route.  
+
+. Next — Chat Service
+
+Open: http://localhost:3004 
+
+<img width="276" height="124" alt="image" src="https://github.com/user-attachments/assets/40af8c81-934d-479a-9536-a6153e1bc6ec" /> 
+
+Chat Service is also reachable. 
+
+==================================== 
+
+Backend connectivity complete
+****************************** 
+
+=================================== 
+
+The containerized application is successfully running as a multi-service application:
+
+<img width="297" height="98" alt="image" src="https://github.com/user-attachments/assets/90c181e1-a3a6-4588-bbf9-50a9f59d23de" />
+
+
+ =================================== 
+
+ Step 14 - Verify the service logs
+
+ Run: docker compose logs --tail=30 auth 
+ 
+
+ <img width="651" height="398" alt="image" src="https://github.com/user-attachments/assets/852a2766-b83d-4118-8cfe-9ea0dd67209e" />
+
+Note: The mongo hostname is important. Inside Docker Compose, the Auth container can reach the MongoDB container using the Compose service name mongo. 
+
+========================== 
+
+Step 15B — Check Streaming Service
+
+Now we'll verify MongoDB connectivity for the Streaming Service as well.
+
+Run: docker compose logs --tail=30 streaming
+
+<img width="651" height="375" alt="image" src="https://github.com/user-attachments/assets/d0f322f5-1461-462c-9737-802a451f333c" /> 
+
+Streaming Service is also successfully connected to MongoDB. 
+
+. Streaming Service :3002
+        │
+        │ mongodb://mongo:27017/streamingapp
+        ↓
+    MongoDB :27017
+        ↓
+     Connected 
+
+================================== 
+
+
+  Step 14C: Admin logs 
+
+  Run: docker compose logs --tail=30 admin 
+
+
+  <img width="647" height="413" alt="image" src="https://github.com/user-attachments/assets/bba828f4-ecfc-4899-8122-ca8e5e54ac3d" /> 
+
+  <img width="645" height="319" alt="image" src="https://github.com/user-attachments/assets/61c621fb-081f-4e3f-ba6b-ec610b110471" />
+
+
+Admin Service is also working correctly and connected to MongoDB. 
+
+. Admin Service :3003
+       │
+       │ mongodb://mongo:27017/streamingapp
+       ↓
+   MongoDB :27017
+       ↓
+   Connected 
+
+================================= 
+
+Step 15D: Check Chat Service
+
+Run: docker compose logs --tail=30 chat
+
+<img width="654" height="379" alt="image" src="https://github.com/user-attachments/assets/b6b477c9-5f41-4f94-8fae-604de953f611" /> 
+
+Chat Service is also successfully connected to MongoDB.
+
+. Completed: 
+
+<img width="425" height="175" alt="image" src="https://github.com/user-attachments/assets/fe4613e2-b7f9-4f53-8e89-4f96348eab59" />
+
+
+Your complete Docker architecture is working
+
+<img width="374" height="215" alt="image" src="https://github.com/user-attachments/assets/48c39cc7-f623-472d-bda2-9a659c6808fa" />
+
+================================================================================================ 
+============================================================================================== 
+
+Phase 3 — Kubernetes / Orchestration
+
+
+
+
+
+
+=====================================
 ===================================
 
 ## Environment Configuration
