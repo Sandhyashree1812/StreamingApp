@@ -265,10 +265,158 @@ Run: Get-Content .\backend\chatService\Dockerfile
 
 <img width="468" height="205" alt="image" src="https://github.com/user-attachments/assets/c8490ad9-d261-4fca-a4d8-7fd1d068710c" />
 
+. The Chat service uses Node.js. 
 
+
+=====================================
+
+. the container starts and the flow would be as below:
+
+Container
+   ↓
+ npm run start
+   ↓
+ Chat Service
+   ↓
+ Port 3004
+
+========================= 
+
+What we know about the backend now:
+
+<img width="392" height="196" alt="image" src="https://github.com/user-attachments/assets/9e64d37c-0fa7-40c3-a649-2eb6dba38f3f" />
+
+
+================= 
+Step 10 -  Last backend Dockerfile
+
+Run: Get-Content .\backend\streamingService\Dockerfile 
+
+<img width="569" height="193" alt="image" src="https://github.com/user-attachments/assets/833f3b63-b5d2-4f51-97c3-a56c1dc628e6" /> 
+
+. The Streaming service is a Node.js application. 
+. Streaming port: 3002 
+
+. When the container starts:
+
+ Container
+    ↓
+ npm run start
+    ↓
+ Streaming Service
+    ↓
+ Port 3002
 
  
-========================================
+======================================== 
+
+
+. All five Dockerfiles are now understood
+
+We have:
+
+<img width="296" height="133" alt="image" src="https://github.com/user-attachments/assets/feafd99e-6f71-45d2-b286-1b433f8be94d" />
+
+--------------------------------- 
+
+<img width="414" height="167" alt="image" src="https://github.com/user-attachments/assets/ac5f8c6e-8210-4a49-ab89-3543475d1985" /> 
+
+. MangoDB is provided separately through mongo:6 
+
+<img width="257" height="194" alt="image" src="https://github.com/user-attachments/assets/5f1e3061-2747-4879-88de-ebf32a0f264f" /> 
+
+=============================== 
+
+Step 10: Inspect docker-compose.yml
+
+Run: Get-Content .\docker-compose.yml 
+
+The architecture is: 
+
+
+<img width="351" height="188" alt="image" src="https://github.com/user-attachments/assets/de9bd0ba-a1d9-45b2-b82a-2c3728d6c3fb" /> 
+
+MongoDB works: Docker doesn't build MongoDB from your source code instead it uses mongo:6 from the MongoDB image repository.
+
+<img width="133" height="84" alt="image" src="https://github.com/user-attachments/assets/80e373d3-5510-484b-9ac6-01179f3cdc90" /> 
+
+. So MongoDB is accessible on port 27017. 
+. MongoDB stores its database files inside: /data/db 
+. The Compose volume: mongo-data, stores that data outside the temporary container filesystem.
+. the MongoDB container is recreated, the database data can persist in the volume. 
+. Conceptually:
+
+MongoDB container
+       │
+       ▼
+ /data/db
+       │
+       ▼
+ mongo-data volume 
+
+ =============================== 
+
+ . Auth depends on MongoDB 
+ . Inside Docker Compose, mongo is the service name.
+ . So Auth communicates with MongoDB using: mongodb://mongo:27017/streamingapp
+ . http://localhost:3001: can reach the Auth container.
+ . backend
+    └── streamingService
+          ├── package.json
+          └── Dockerfile
+
+ . Streaming port:
+ Host → Container
+ 3002 → 3002
+
+ . Admin
+    ↓
+  localhost:3003
+
+============================================= 
+
+Step 11 - Validate the Compose configuration:
+
+Run: docker compose config
+
+<img width="653" height="370" alt="image" src="https://github.com/user-attachments/assets/41dad46a-709e-4ac5-982d-75f24690ba21" />
+
+Check Exiting Docker images:
+
+<img width="656" height="175" alt="image" src="https://github.com/user-attachments/assets/9e53ddc7-831d-4b76-a43b-b71bc5168a61" />
+
+
+Step 11: Test the Frontend
+
+Run: docker compose ps
+
+<img width="640" height="255" alt="image" src="https://github.com/user-attachments/assets/2b4f81a8-6956-4b18-beb8-67f683a23f0c" />
+
+
+
+
+This takes the docker-compose.yml, resolves the variables/defaults, and shows Docker the configuration it will actually use.
+
+Your output confirms that Docker understands all 6 services
+
+
+===================== 
+
+Step 12 - Start the application:
+
+Run: docker compose up -d
+
+<img width="652" height="151" alt="image" src="https://github.com/user-attachments/assets/e13c1931-d32a-4541-b2d3-269b644953b0" />
+
+. Verify the containers 
+
+Run: docker compose ps
+
+
+<img width="640" height="255" alt="image" src="https://github.com/user-attachments/assets/43f5e147-4a32-4186-bdf3-603c3029b94f" />
+
+
+
 ****************************************
 ===================================
 
