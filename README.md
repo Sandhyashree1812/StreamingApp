@@ -6,7 +6,6 @@ Stream premium video content, host live watch parties, and manage your catalogue
 
 ## Architecture 
 
-
 StreamingApp — Overall Project Architecture:
 
 
