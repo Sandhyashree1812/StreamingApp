@@ -2032,20 +2032,22 @@ Current Kubernetes work completed
 
 We now have:
 
+You now have:
+
 Requirement	Status
-MongoDB Deployment + PVC	- done
-Auth Deployment + Service	- done
-Streaming Deployment + Service	- done
-Admin Deployment + Service	- done
-Chat Deployment + Service	- done
-Frontend Deployment + Service	- done
-Kubernetes ConfigMap	- done
-Kubernetes Secret	- done
-Scaling to 3 replicas	- done
-Rolling update	- done
-NGINX Ingress Controller	- done
-Ingress routing	- done
-StreamFlix accessible through localhost	- done 
+MongoDB Deployment + PVC	✅
+Auth Deployment + Service	✅
+Streaming Deployment + Service	✅
+Admin Deployment + Service	✅
+Chat Deployment + Service	✅
+Frontend Deployment + Service	✅
+Kubernetes ConfigMap	✅
+Kubernetes Secret	✅
+Scaling to 3 replicas	✅
+Rolling update	✅
+NGINX Ingress Controller	✅
+Ingress routing	✅
+StreamFlix accessible through localhost	✅
 -------------------------------- 
 ================================== 
 
