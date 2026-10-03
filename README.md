@@ -1517,12 +1517,598 @@ chat       → 1 Pod
 frontend   → 1 Pod 
 
 Note: We'll demonstrate scaling by increasing the Streaming Service from: 1 replica → 3 replicas 
-The Service remains: streaming:3002
+. The Service remains: streaming:3002 
+. and Kubernetes distributes traffic to the available Streaming Pods.
+
 ============================ 
 
 Phase 3 — Step 8: Scale the Streaming Service 
 
 =========================== 
+
+
+Run: kubectl get pods 
+
+<img width="392" height="126" alt="image" src="https://github.com/user-attachments/assets/a3dd9649-52e1-4444-b6a0-a6b69396e716" />
+
+
+Run: kubectl scale deployment streaming --replicas=3 
+
+<img width="635" height="40" alt="image" src="https://github.com/user-attachments/assets/8b11a87a-c184-43c7-9211-5044f2a60a74" />
+
+Run: kubectl get pods
+
+<img width="413" height="149" alt="image" src="https://github.com/user-attachments/assets/0b7baa6f-f2e4-47e1-b62e-39329f4114a6" /> 
+
+--------------------- 
+
+Phase 3 — Step 8, Scaling Complete 
+
+Before
+Streaming → 1 Pod
+--------------------
+After
+Streaming → 3 Pods
+-------------------------- 
+
+============================= 
+
+Phase 3 — Step 9: Verify the Deployment Replica Count 
+
+Run: kubectl get deployment 
+
+<img width="380" height="129" alt="image" src="https://github.com/user-attachments/assets/cefc13c7-2e15-4223-b81e-b9d6dd61f71b" />
+
+
+--------------------- 
+
+Notes:
+That means Kubernetes currently has:
+. 3 desired replicas
+. 3 updated replicas
+. 3 available replicas
+
+Now we have:
+
+Pod-level scaling
+streaming-...-kzs5h   1/1 Running
+streaming-...-sdk2c   1/1 Running
+streaming-...-t229g   1/1 Running 
+
+Deployment-level scaling
+streaming   3/3   3   3 
+
+--------------- 
+================= 
+
+Phase 3 — Step 10: Rolling Update 
+
+===================== 
+
+Notes:
+
+What is a rolling update?
+Suppose your Streaming Service is currently running:
+Version A
+   ├── Pod 1
+   ├── Pod 2
+   └── Pod 3 
+
+When we deploy a new image/version, Kubernetes can gradually replace the old Pods rather than stopping all three at once:
+
+Old Pod → New Pod
+Old Pod → New Pod
+Old Pod → New Pod
+This helps maintain application availability during an update. 
+
+--------------- 
+
+We already have: streamingapp-streaming:latest
+Rather than rebuilding the application—which could take a long time on your machine—we can demonstrate the rolling-update mechanism using the same application image with a new Kubernetes image tag.
+
+-------------------
+Step 10A — Create the v2 image tag 
+
+First, create a second tag locally:
+
+Run: docker tag streamingapp-streaming:latest streamingapp-streaming:v2 
+
+<img width="607" height="41" alt="image" src="https://github.com/user-attachments/assets/51b2cd3c-86a4-4219-ad20-f5774e7912b4" />
+
+
+This does not rebuild the image. It simply gives the existing image another tag. 
+
+Then, we'll update the Kubernetes Deployment from: streamingapp-streaming:latest
+to: streamingapp-streaming:v2 
+
+So, Kubernetes will recognize this as a Deployment update and perform a rollout. 
+
+---------------- 
+
+Phase 3 — Step 10B: Update the Kubernetes Deployment 
+
+========================= 
+
+
+Run: kubectl set image deployment/streaming streaming=streamingapp-streaming:v2 
+
+<img width="632" height="46" alt="image" src="https://github.com/user-attachments/assets/b40caa56-e042-4e82-bd68-9723741c6b95" />
+
+Run: kubectl rollout status deployment/streaming 
+
+<img width="473" height="44" alt="image" src="https://github.com/user-attachments/assets/d4810e74-798a-4e49-b044-1d57c23cda8b" />
+
+Run:  kubectl get pods
+
+
+<img width="428" height="151" alt="image" src="https://github.com/user-attachments/assets/cdf88b46-979e-40be-8f88-0d6a00818d25" />
+
+
+Notice the Pod names changed from the previous ReplicaSet (7f97ccff69) to the new one (6858cc95f8). That is evidence that Kubernetes created new Pods as part of the Deployment update. 
+
+----------------- 
+
+Rolling update
+Old Deployment version
+        ↓
+Kubernetes rollout
+        ↓
+New Pods
+        ↓
+3/3 Running 
+
+<img width="608" height="215" alt="image" src="https://github.com/user-attachments/assets/3baa22a1-7c35-4206-a1e4-78d1c1dfbbfd" /> 
+
+====================== 
+
+Phase 3 — Step 10 ✅ COMPLETE
+===============================
+
+
+<img width="608" height="215" alt="image" src="https://github.com/user-attachments/assets/cf96c1de-b09e-4b07-b368-e0fe87e6b30c" />
+
+
+============================== 
+
+Phase 3 — Step 11: Open the Kubernetes Frontend 
+
+=============================== 
+
+frontend Service earlier showed: frontend   NodePort   80:31142/TCP
+So Kubernetes exposed the frontend through NodePort 31142.
+
+Open this in your browser: http://localhost:31142 
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/0e151994-875c-4ff6-a8d3-7c8fe972e4e0" />
+
+============== 
+Phase 3 — Step 11 ✅ Complete 
+============================= 
+
+We have now proven:
+
+Browser
+   ↓
+localhost:31142
+   ↓
+Kubernetes NodePort
+   ↓
+Frontend Service
+   ↓
+Frontend Pod
+   ↓
+Nginx + React
+   ↓
+StreamFlix page ✅
+
+=========================== 
+
+Phase 3 — Step 12: ConfigMap and Secret 
+
+=============================== 
+
+Notes:
+
+Our current deployments contain configuration such as:
+PORT
+MONGO_URI
+CLIENT_URLS
+---------------------------------- 
+
+and sensitive configuration: JWT_SECRET
+
+-------------------------------------- 
+
+Kubernetes provides:
+
+ConfigMap → non-sensitive configuration
+Secret → sensitive configuration
+
+We'll create both. 
+
+============================== 
+
+Step 12A — Create config.yaml
+
+============================== 
+
+Run: notepad .\k8s\config.yaml 
+
+Paste the below code:
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: streamingapp-config
+data:
+  MONGO_URI: "mongodb://mongo:27017/streamingapp"
+  CLIENT_URLS: "http://localhost:31142"
+  AUTH_PORT: "3001"
+  STREAMING_PORT: "3002"
+  ADMIN_PORT: "3003"
+  CHAT_PORT: "3004"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: streamingapp-secret
+type: Opaque
+stringData:
+  JWT_SECRET: "changeme" 
+
+
+  ---------------------------------------------------------- 
+
+  Notes:
+
+. Instead of putting configuration directly into every Deployment:
+
+Deployment
+ ├── PORT
+ ├── MONGO_URI
+ ├── CLIENT_URLS
+ └── JWT_SECRET
+
+--------------------------- 
+
+we can centrally manage it:
+
+             ┌── ConfigMap
+Deployments ─┤
+             └── Secret
+
+This demonstrates Kubernetes configuration and secret management.
+For this assignment, changeme is only a demonstration value. We do not use a real production secret in GitHub.
+
+==================================== 
+
+Step 12B — Apply it 
+
+====================== 
+
+Run: kubectl apply -f .\k8s\config.yaml 
+
+<img width="553" height="47" alt="image" src="https://github.com/user-attachments/assets/6a7dd8f8-dcac-4c68-9e47-db71de974d86" />
+
+
+Run: kubectl get configmap,secret 
+
+
+<img width="375" height="110" alt="image" src="https://github.com/user-attachments/assets/284c1110-f45d-433e-ad6c-d88ef6194bc2" />
+
+------------------------------------------------- 
+
+Notes:
+
+So we now have:
+
+Kubernetes
+│
+├── ConfigMap
+│   └── streamingapp-config
+│
+└── Secret
+    └── streamingapp-secret
+
+------------------------------- 
+================================= 
+
+Phase 3 — Step 13: Check Ingress support 
+
+-===================================== 
+
+Notes:
+
+our assignment requires exposing the application through Ingress.
+
+Before we create an Ingress manifest, we need to know whether our Docker Desktop Kubernetes cluster has an Ingress controller available. 
+
+Why?
+
+An Ingress resource by itself doesn't route traffic. We need an Ingress Controller to actually process it.
+
+Conceptually:
+
+Browser
+   ↓
+Ingress Controller
+   ↓
+Ingress
+   ├── frontend
+   ├── auth
+   ├── streaming
+   ├── admin
+   └── chat
+
+-------------------------- 
+
+Run: kubectl get ingressclass 
+
+
+<img width="348" height="50" alt="image" src="https://github.com/user-attachments/assets/c49ef915-59ca-4219-9e58-116749c5b959" />
+
+our Docker Desktop Kubernetes cluster currently has no IngressClass, so there is no Ingress controller installed. 
+
+=================== 
+
+Phase 3 — Step 13A: Install NGINX Ingress Controller 
+
+=================================== 
+
+Run: kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.15.1/deploy/static/provider/cloud/deploy.yaml
+
+<img width="581" height="295" alt="image" src="https://github.com/user-attachments/assets/15e1eb0d-efee-4e5a-8537-6260ea2b3be3" />
+
+
+-------------------------- 
+
+Notes:
+
+This is the current installation manifest shown in the official ingress-nginx installation guide.
+
+What this creates
+It will create the ingress-nginx namespace and the controller resources:
+
+Kubernetes
+   │
+   └── ingress-nginx
+       └── NGINX Ingress Controller
+                │
+                ↓
+             Ingress
+                │
+                ↓
+            frontend
+
+
+--------------------------------- 
+
+Step 1 — Check the Ingress Controller 
+
+Run: kubectl get pods -n ingress-nginx 
+
+<img width="516" height="69" alt="image" src="https://github.com/user-attachments/assets/6bf1f35c-9ad2-4028-a8d1-ee8305d5d39c" />
+
+Run: kubectl get ingressclass
+
+<img width="413" height="57" alt="image" src="https://github.com/user-attachments/assets/2aec3768-241d-4cbe-8e3f-46fc384e3ad1" />
+
+--------------------------------- 
+
+Step 2 — Create the Ingress 
+
+============================== 
+
+Notes:
+
+. The purpose of this Ingress is to provide a single entry point to your application and route traffic to the existing frontend Service.
+
+. Our current frontend service is: frontend → port 80 
+
+. Create the file:
+C:\Users\sandy\StreamingApp\k8s\ingress.yaml
+
+. What this does
+Browser
+   │
+   ▼
+NGINX Ingress
+   │
+   │  /
+   ▼
+frontend Service :80
+   │
+   ▼
+Frontend Pod
+
+This is useful for our assignment because instead of exposing every application service externally, Kubernetes can use the Ingress as the application's entry point. 
+
+-----------------------------------
+
+Step 2A — Create ingress.yaml
+
+============================== 
+
+Run: notepad k8s\ingress.yaml 
+
+Paste the below code in it and save it:
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: streamingapp-ingress
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80 
+
+--------------------------------------------- 
+
+Step 2B — Verify the file exists
+
+Run: dir
+
+<img width="395" height="200" alt="image" src="https://github.com/user-attachments/assets/85a8852b-d4d9-4833-8295-2a276a8ab8b8" />
+
+---------------------- 
+
+Step 2C — Apply the Ingress
+
+
+Run: kubectl apply -f k8s\ingress.yaml
+
+
+<img width="416" height="51" alt="image" src="https://github.com/user-attachments/assets/168e23f0-e5e3-4918-b948-4f357bae6849" />
+
+Run:  kubectl get ingress
+
+
+
+<img width="393" height="74" alt="image" src="https://github.com/user-attachments/assets/b68f347d-571e-448b-b28a-922ce4a54b87" />
+
+--------------------------- 
+
+Notes:
+
+This means:
+
+Browser
+   │
+   ▼
+localhost:80
+   │
+   ▼
+NGINX Ingress
+   │
+   ▼
+frontend Service :80
+   │
+   ▼
+StreamFlix Frontend Pod
+
+================================== 
+
+Step 3 — Test the application through Ingress
+
+Open a new browser tab and go to: http://localhost
+
+You should see your StreamFlix / StreamingApp frontend.
+
+
+<img width="899" height="479" alt="image" src="https://github.com/user-attachments/assets/802cfb9a-ff1c-42e3-888c-cff4fb398217" />
+
+--------------------------- 
+
+our screenshot clearly shows:
+
+. Browser URL: http://localhost
+. StreamFlix frontend is loading correctly.
+. Traffic is going through the Kubernetes NGINX Ingress.
+. This proves the chain:
+
+Browser
+   ↓
+NGINX Ingress
+   ↓
+frontend Service
+   ↓
+Frontend Pod
+   ↓
+StreamFlix application
+
+-------------------------------- 
+
+Current Kubernetes work completed
+
+=================================== 
+
+We now have:
+
+Requirement	Status
+MongoDB Deployment + PVC	- done
+Auth Deployment + Service	- done
+Streaming Deployment + Service	- done
+Admin Deployment + Service	- done
+Chat Deployment + Service	- done
+Frontend Deployment + Service	- done
+Kubernetes ConfigMap	- done
+Kubernetes Secret	- done
+Scaling to 3 replicas	- done
+Rolling update	- done
+NGINX Ingress Controller	- done
+Ingress routing	- done
+StreamFlix accessible through localhost	- done 
+-------------------------------- 
+================================== 
+
+Final Kubernetes evidence: 
+
+=========================== 
+
+
+Run: kubectl get pods 
+
+<img width="365" height="151" alt="image" src="https://github.com/user-attachments/assets/a5b720b7-5260-4d9d-91a0-e38174711c2e" />
+
+Run: kubectl get deployments
+
+<img width="353" height="122" alt="image" src="https://github.com/user-attachments/assets/71f3c346-88dc-4dd3-abf7-2230416ff1bb" />
+
+Run: kubectl get services
+
+
+<img width="496" height="146" alt="image" src="https://github.com/user-attachments/assets/1211c67d-ffc5-4790-aceb-a7d818717563" />
+
+------------------------- 
+
+our outputs prove the below:
+
+Kubernetes status
+*****************
+
+All application pods are healthy:
+
+admin       1/1 Running
+auth        1/1 Running
+chat        1/1 Running
+frontend    1/1 Running
+mongo       1/1 Running
+streaming   3/3 Running 
+------------------------
+. We have three Streaming service replicas running.
+. the deployment has 3 desired, 3 updated, and 3 available replicas.
+. Services
+
+our architecture is as required:
+
+frontend   NodePort   80:31142
+auth       ClusterIP  3001
+streaming  ClusterIP  3002
+admin      ClusterIP  3003
+chat       ClusterIP  3004
+mongo      ClusterIP  27017
+
+
+. our NGINX Ingress is serving the frontend through: http://localhost
+
+
+
+
+
+
+
+
+
+
 
 
 
