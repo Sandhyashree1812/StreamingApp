@@ -2101,6 +2101,1397 @@ mongo      ClusterIP  27017
 
 . our NGINX Ingress is serving the frontend through: http://localhost
 
+====================================== 
+
+PHASE 4 — Kubernetes Container Orchestration
+
+Step 4.1 — Prepare Kubernetes cluster 
+
+
+
+<img width="659" height="265" alt="image" src="https://github.com/user-attachments/assets/642ec8d3-cc81-42ca-baff-7eaef50b7415" />
+
+shows that MongoDB itself is running and the PVC is bound. 
+
+Next: Phase 4 — Step 4.2 status
+
+
+Run: get deployment mongo
+
+
+<img width="404" height="50" alt="image" src="https://github.com/user-attachments/assets/5597269c-eb62-4d63-bb9c-510fc0f0c521" />
+
+This confirms MongoDB is healthy and running inside Kubernetes.
+
+---------------------------- 
+
+Run:  kubectl describe deployment mongo
+
+<img width="593" height="394" alt="image" src="https://github.com/user-attachments/assets/ec3b6933-5abb-4573-b81b-d3aaad525286" />
+
+<img width="497" height="140" alt="image" src="https://github.com/user-attachments/assets/35ffc4f6-96f3-4163-ba95-e3beab7a0145" />
+
+================================ 
+
+Phase 5 — Configuration & Security 
+
+Run the below commands:
+kubectl get configmap streamingapp-config
+kubectl get secret streamingapp-secret
+kubectl get ingress
+kubectl get svc 
+
+<img width="471" height="263" alt="image" src="https://github.com/user-attachments/assets/38dd0874-ed59-42e3-b769-23678ecff288" />
+
+================================= 
+
+Step 5.1 Update k8s/config.yml
+
+=================================== 
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: streamingapp-config
+data:
+  MONGO_URI: "mongodb://mongo:27017/streamingapp"
+  CLIENT_URLS: "http://localhost:31142"
+  AUTH_PORT: "3001"
+  STREAMING_PORT: "3002"
+  ADMIN_PORT: "3003"
+  CHAT_PORT: "3004"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: streamingapp-secret
+type: Opaque
+stringData:
+  JWT_SECRET: "changeme" 
+  
+---------------- 
+======================================
+
+2. k8s/auth.yaml
+
+==================================
+
+Replace the entire file with below code:
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: auth
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  template:
+    metadata:
+      labels:
+        app: auth
+
+    spec:
+      containers:
+        - name: auth
+          image: streamingapp-auth:latest
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 3001
+
+          envFrom:
+            - configMapRef:
+                name: streamingapp-config
+            - secretRef:
+                name: streamingapp-secret
+
+          readinessProbe:
+            tcpSocket:
+              port: 3001
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+
+          livenessProbe:
+            tcpSocket:
+              port: 3001
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth
+spec:
+  selector:
+    app: auth
+
+  ports:
+    - port: 3001
+      targetPort: 3001
+
+  type: ClusterIP 
+  
+-----------------------------  
+
+Notes:
+Why we used tcpSocket instead of /health
+This is intentional.
+We haven't confirmed that the Node.js services expose a /health endpoint. A TCP probe checks whether the application is actually listening on its port without assuming a particular HTTP endpoint.
+So we can satisfy the readiness/liveness probe requirement without risking the application because of a nonexistent /health route.
+
+
+------------------ 
+
+3. k8s/app-services.yaml
+Replace the entire file with this:
+
+
+# ============================================================
+# STREAMING SERVICE
+# ============================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streaming
+spec:
+  replicas: 3
+
+  selector:
+    matchLabels:
+      app: streaming
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  template:
+    metadata:
+      labels:
+        app: streaming
+
+    spec:
+      containers:
+        - name: streaming
+          image: streamingapp-streaming:latest
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 3002
+
+          envFrom:
+            - configMapRef:
+                name: streamingapp-config
+            - secretRef:
+                name: streamingapp-secret
+
+          readinessProbe:
+            tcpSocket:
+              port: 3002
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+
+          livenessProbe:
+            tcpSocket:
+              port: 3002
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: streaming
+spec:
+  selector:
+    app: streaming
+
+  ports:
+    - port: 3002
+      targetPort: 3002
+
+  type: ClusterIP
+
+
+# ============================================================
+# ADMIN SERVICE
+# ============================================================
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: admin
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  template:
+    metadata:
+      labels:
+        app: admin
+
+   spec:
+      containers:
+        - name: admin
+          image: streamingapp-admin:latest
+          imagePullPolicy: IfNotPresent
+
+   ports:
+            - containerPort: 3003
+
+   envFrom:
+            - configMapRef:
+                name: streamingapp-config
+            - secretRef:
+                name: streamingapp-secret
+
+   readinessProbe:
+            tcpSocket:
+              port: 3003
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+
+   livenessProbe:
+            tcpSocket:
+              port: 3003
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin
+spec:
+  selector:
+    app: admin
+
+  ports:
+    - port: 3003
+      targetPort: 3003
+
+  type: ClusterIP
+
+
+# ============================================================
+# CHAT SERVICE
+# ============================================================
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: chat
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  template:
+    metadata:
+      labels:
+        app: chat
+
+    spec:
+      containers:
+        - name: chat
+          image: streamingapp-chat:latest
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 3004
+
+          envFrom:
+            - configMapRef:
+                name: streamingapp-config
+            - secretRef:
+                name: streamingapp-secret
+
+          readinessProbe:
+            tcpSocket:
+              port: 3004
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+
+          livenessProbe:
+            tcpSocket:
+              port: 3004
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat
+spec:
+  selector:
+    app: chat
+
+  ports:
+    - port: 3004
+      targetPort: 3004
+
+  type: ClusterIP
+
+
+# ============================================================
+# FRONTEND SERVICE
+# ============================================================
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: frontend
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  template:
+    metadata:
+      labels:
+        app: frontend
+
+    spec:
+      containers:
+        - name: frontend
+          image: streamingapp-frontend:latest
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 80
+
+          readinessProbe:
+            tcpSocket:
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+
+          livenessProbe:
+            tcpSocket:
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  selector:
+    app: frontend
+
+  ports:
+    - port: 80
+      targetPort: 80
+
+  type: NodePort
+------------------------ 
+================================= 
+
+4. k8s/ingress.yaml 
+
+========================
+Now replace the entire file with:
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: streamingapp-ingress
+
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+
+spec:
+  ingressClassName: nginx
+
+  rules:
+    - http:
+
+   paths:
+
+   # Frontend
+   - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+
+       # Authentication
+        - path: /api/auth
+            pathType: Prefix
+            backend:
+              service:
+                name: auth
+                port:
+                  number: 3001
+
+          # Streaming
+          - path: /api/streaming
+            pathType: Prefix
+            backend:
+              service:
+                name: streaming
+                port:
+                  number: 3002
+
+          # Admin
+          - path: /api/admin
+            pathType: Prefix
+            backend:
+              service:
+                name: admin
+                port:
+                  number: 3003
+
+          # Chat / WebSocket
+          - path: /api/chat
+            pathType: Prefix
+            backend:
+              service:
+                name: chat
+                port:
+                  number: 3004 
+
+                  
+
+    ------------------------------------------------- 
+
+This gives you the required single entry point: http://localhost
+
+This gives us the required single entry point: http://localhost
+
+with:
+/                  → frontend:80
+/api/auth          → auth:3001
+/api/streaming     → streaming:3002
+/api/admin         → admin:3003
+/api/chat          → chat:3004
+
+And the NGINX timeout/HTTP 1.1 settings support the chat WebSocket connection. 
+
+--------------- 
+
+
+5. Validate YAML BEFORE applying
+
+ Run: 
+ kubectl apply --dry-run=client -f k8s/config.yaml
+ kubectl apply --dry-run=client -f k8s/auth.yaml
+ kubectl apply --dry-run=client -f k8s/app-services.yaml
+ kubectl apply --dry-run=client -f k8s/ingress.yaml 
+
+ <img width="505" height="221" alt="image" src="https://github.com/user-attachments/assets/9f126ae9-efca-40ce-9892-46c9d854918f" />
+
+Run: 
+
+kubectl apply -f k8s/config.yaml
+kubectl apply -f k8s/auth.yaml
+kubectl apply -f k8s/app-services.yaml
+kubectl apply -f k8s/ingress.yaml 
+
+<img width="501" height="226" alt="image" src="https://github.com/user-attachments/assets/7f8e377e-d00c-4639-835f-95978c6f3794" />
+
+   
+Run:
+kubectl get pods  
+
+<img width="425" height="134" alt="image" src="https://github.com/user-attachments/assets/79487652-f41d-43a0-895e-a0b8fe61dd60" />
+
+
+Run:
+kubectl get pods,svc,ingress
+
+<img width="507" height="290" alt="image" src="https://github.com/user-attachments/assets/bc72bbbc-8bdf-4064-8e26-9aa4c0ffca72" />
+
+Run: 
+kubectl get deployments
+kubectl rollout status deployment/streaming
+kubectl get ingress streamingapp-ingress -o wide
+
+<img width="598" height="189" alt="image" src="https://github.com/user-attachments/assets/640591e2-7e55-48f3-b1e2-529ec74ca844" />
+
+=================================================================== 
+
+Phase 8 — Helm Packaging
+
+==========================
+
+
+
+Step 8.1 — Create the Helm folders 
+
+=========================== 
+
+run:
+mkdir helm
+mkdir helm\streamingapp
+mkdir helm\streamingapp\templates 
+
+<img width="422" height="272" alt="image" src="https://github.com/user-attachments/assets/3fb34397-303c-4724-8828-736248e15ee5" />
+
+
+<img width="418" height="315" alt="image" src="https://github.com/user-attachments/assets/205fad08-1af3-4eba-9972-aeeb1030cc52" />
+
+-------------------------------------- 
+
+Step 8.2 — Create Chart.yaml 
+
+Run: 
+
+@'
+apiVersion: v2
+name: streamingapp
+description: Helm chart for the StreamingApp microservices platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+
+keywords:
+  - streaming
+  - microservices
+  - kubernetes
+  - mongodb
+  - nginx
+'@ | Set-Content helm\streamingapp\Chart.yaml
+
+------------------------- 
+
+3. Create values.yaml
+Run:
+
+@'
+replicaCount:
+  auth: 1
+  streaming: 3
+  admin: 1
+  chat: 1
+  frontend: 1
+  mongo: 1
+
+images:
+  auth:
+    repository: streamingapp-auth
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  streaming:
+    repository: streamingapp-streaming
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  admin:
+    repository: streamingapp-admin
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  chat:
+    repository: streamingapp-chat
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  frontend:
+    repository: streamingapp-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+
+  mongo:
+    repository: mongo
+    tag: "6"
+    pullPolicy: IfNotPresent
+
+service:
+  auth:
+    port: 3001
+
+  streaming:
+    port: 3002
+
+  admin:
+    port: 3003
+
+  chat:
+    port: 3004
+
+  frontend:
+    port: 80
+
+  mongo:
+    port: 27017
+
+config:
+  mongoUri: mongodb://mongo:27017/streamingapp
+  clientUrls: http://localhost:31142
+
+secret:
+  jwtSecret: changeme
+
+ingress:
+  enabled: true
+  className: nginx
+  host: ""
+'@ | Set-Content helm\streamingapp\values.yaml 
+
+-------------------- 
+
+4. Create templates/configmap.yaml
+Run:
+
+@'
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: streamingapp-config
+data:
+  MONGO_URI: {{ .Values.config.mongoUri | quote }}
+  CLIENT_URLS: {{ .Values.config.clientUrls | quote }}
+  AUTH_PORT: {{ .Values.service.auth.port | quote }}
+  STREAMING_PORT: {{ .Values.service.streaming.port | quote }}
+  ADMIN_PORT: {{ .Values.service.admin.port | quote }}
+  CHAT_PORT: {{ .Values.service.chat.port | quote }}
+'@ | Set-Content helm\streamingapp\templates\configmap.yaml 
+
+------------------- 
+
+5. Create templates/secret.yaml
+Run:
+
+@'
+apiVersion: v1
+kind: Secret
+metadata:
+  name: streamingapp-secret
+type: Opaque
+stringData:
+  JWT_SECRET: {{ .Values.secret.jwtSecret | quote }}
+'@ | Set-Content helm\streamingapp\templates\secret.yaml 
+
+--------------- 
+
+6. Create templates/auth.yaml
+Run:
+
+@'
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+spec:
+  replicas: {{ .Values.replicaCount.auth }}
+
+  selector:
+    matchLabels:
+      app: auth
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  template:
+    metadata:
+      labels:
+        app: auth
+
+    spec:
+      containers:
+        - name: auth
+          image: "{{ .Values.images.auth.repository }}:{{ .Values.images.auth.tag }}"
+          imagePullPolicy: {{ .Values.images.auth.pullPolicy }}
+
+          ports:
+            - containerPort: 3001
+
+          envFrom:
+            - configMapRef:
+                name: streamingapp-config
+            - secretRef:
+                name: streamingapp-secret
+
+          readinessProbe:
+            tcpSocket:
+              port: 3001
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+
+          livenessProbe:
+            tcpSocket:
+              port: 3001
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth
+spec:
+  selector:
+    app: auth
+
+  ports:
+    - port: 3001
+      targetPort: 3001
+
+  type: ClusterIP
+'@ | Set-Content helm\streamingapp\templates\auth.yaml 
+
+------------- 
+
+7. Create templates/app-services.yaml
+This one contains streaming + admin + chat + frontend.
+Run:
+
+@'
+# ============================================================
+# STREAMING SERVICE
+# ============================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: streaming
+spec:
+  replicas: {{ .Values.replicaCount.streaming }}
+
+  selector:
+    matchLabels:
+      app: streaming
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  template:
+    metadata:
+      labels:
+        app: streaming
+
+    spec:
+      containers:
+        - name: streaming
+          image: "{{ .Values.images.streaming.repository }}:{{ .Values.images.streaming.tag }}"
+          imagePullPolicy: {{ .Values.images.streaming.pullPolicy }}
+
+          ports:
+            - containerPort: 3002
+
+          envFrom:
+            - configMapRef:
+                name: streamingapp-config
+            - secretRef:
+                name: streamingapp-secret
+
+          readinessProbe:
+            tcpSocket:
+              port: 3002
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+
+          livenessProbe:
+            tcpSocket:
+              port: 3002
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: streaming
+spec:
+  selector:
+    app: streaming
+  ports:
+    - port: 3002
+      targetPort: 3002
+  type: ClusterIP
+
+
+# ============================================================
+# ADMIN SERVICE
+# ============================================================
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin
+spec:
+  replicas: {{ .Values.replicaCount.admin }}
+
+  selector:
+    matchLabels:
+      app: admin
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  template:
+    metadata:
+      labels:
+        app: admin
+
+    spec:
+      containers:
+        - name: admin
+          image: "{{ .Values.images.admin.repository }}:{{ .Values.images.admin.tag }}"
+          imagePullPolicy: {{ .Values.images.admin.pullPolicy }}
+
+          ports:
+            - containerPort: 3003
+
+          envFrom:
+            - configMapRef:
+                name: streamingapp-config
+            - secretRef:
+                name: streamingapp-secret
+
+          readinessProbe:
+            tcpSocket:
+              port: 3003
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+
+          livenessProbe:
+            tcpSocket:
+              port: 3003
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin
+spec:
+  selector:
+    app: admin
+  ports:
+    - port: 3003
+      targetPort: 3003
+  type: ClusterIP
+
+
+# ============================================================
+# CHAT SERVICE
+# ============================================================
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chat
+spec:
+  replicas: {{ .Values.replicaCount.chat }}
+
+  selector:
+    matchLabels:
+      app: chat
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  template:
+    metadata:
+      labels:
+        app: chat
+
+    spec:
+      containers:
+        - name: chat
+          image: "{{ .Values.images.chat.repository }}:{{ .Values.images.chat.tag }}"
+          imagePullPolicy: {{ .Values.images.chat.pullPolicy }}
+
+          ports:
+            - containerPort: 3004
+
+          envFrom:
+            - configMapRef:
+                name: streamingapp-config
+            - secretRef:
+                name: streamingapp-secret
+
+          readinessProbe:
+            tcpSocket:
+              port: 3004
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+
+          livenessProbe:
+            tcpSocket:
+              port: 3004
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: chat
+spec:
+  selector:
+    app: chat
+  ports:
+    - port: 3004
+      targetPort: 3004
+  type: ClusterIP
+
+
+# ============================================================
+# FRONTEND SERVICE
+# ============================================================
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+spec:
+  replicas: {{ .Values.replicaCount.frontend }}
+
+  selector:
+    matchLabels:
+      app: frontend
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+
+  template:
+    metadata:
+      labels:
+        app: frontend
+
+    spec:
+      containers:
+        - name: frontend
+          image: "{{ .Values.images.frontend.repository }}:{{ .Values.images.frontend.tag }}"
+          imagePullPolicy: {{ .Values.images.frontend.pullPolicy }}
+
+          ports:
+            - containerPort: 80
+
+          readinessProbe:
+            tcpSocket:
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+
+          livenessProbe:
+            tcpSocket:
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 2
+            failureThreshold: 3
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+spec:
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 80
+  type: NodePort
+'@ | Set-Content helm\streamingapp\templates\app-services.yaml 
+
+------------ 
+
+8. Create templates/mongo-statefulset.yaml
+Run:
+
+@'
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo
+spec:
+  clusterIP: None
+  selector:
+    app: mongo
+  ports:
+    - port: 27017
+      targetPort: 27017
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mongo
+spec:
+  serviceName: mongo
+  replicas: {{ .Values.replicaCount.mongo }}
+
+  selector:
+    matchLabels:
+      app: mongo
+
+  template:
+    metadata:
+      labels:
+        app: mongo
+
+    spec:
+      containers:
+        - name: mongo
+          image: "{{ .Values.images.mongo.repository }}:{{ .Values.images.mongo.tag }}"
+          imagePullPolicy: {{ .Values.images.mongo.pullPolicy }}
+
+          ports:
+            - containerPort: 27017
+
+          volumeMounts:
+            - name: mongo-storage
+              mountPath: /data/db
+
+  volumeClaimTemplates:
+    - metadata:
+        name: mongo-storage
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+'@ | Set-Content helm\streamingapp\templates\mongo-statefulset.yaml 
+
+---------------- 
+
+9. Create templates/ingress.yaml
+Run:
+
+@'
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: streamingapp-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+
+  rules:
+    - {{- if .Values.ingress.host }}
+      host: {{ .Values.ingress.host }}
+      {{- end }}
+      http:
+        paths:
+
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+
+          - path: /api/auth
+            pathType: Prefix
+            backend:
+              service:
+                name: auth
+                port:
+                  number: 3001
+
+          - path: /api/streaming
+            pathType: Prefix
+            backend:
+              service:
+                name: streaming
+                port:
+                  number: 3002
+
+          - path: /api/admin
+            pathType: Prefix
+            backend:
+              service:
+                name: admin
+                port:
+                  number: 3003
+
+          - path: /api/chat
+            pathType: Prefix
+            backend:
+              service:
+                name: chat
+                port:
+                  number: 3004
+{{- end }}
+'@ | Set-Content helm\streamingapp\templates\ingress.yaml 
+
+-------------------- 
+
+10. Verify that all files were created
+
+Run: Get-ChildItem helm\streamingapp -Recurse 
+
+<img width="503" height="361" alt="image" src="https://github.com/user-attachments/assets/5558b71a-fb40-42c0-b401-f432ed071a92" />
+
+
+
+------------------------
+=============== 
+
+11. Run Helm validation
+
+ Run: helm lint helm\streamingapp 
+
+ <img width="433" height="74" alt="image" src="https://github.com/user-attachments/assets/f204582e-b963-49ba-adad-497ec1a8adb7" />
+
+Run: helm template streamingapp helm\streamingapp 
+
+<img width="450" height="251" alt="image" src="https://github.com/user-attachments/assets/efd6fc17-f350-4101-8348-5f2f0ba02704" />
+
+
+Run: helm install streamingapp helm\streamingapp 
+
+
+<img width="659" height="84" alt="image" src="https://github.com/user-attachments/assets/975f6ade-d330-46b2-9a79-b680273db3f8" />
+
+Notes: 
+The helm install failure is not a problem with the chart. It happened because streamingapp-secret already exists from our kubectl deployment and Helm refuses to take ownership of it without Helm ownership metadata.
+
+================= 
+
+Step 1 — Capture final Kubernetes evidence
+
+Run: kubectl get pods,svc,ingress
+
+<img width="610" height="309" alt="image" src="https://github.com/user-attachments/assets/00e67894-2bfb-4e00-820b-80331994ab72" />
+
+
+Run: kubectl get deployments
+
+<img width="391" height="133" alt="image" src="https://github.com/user-attachments/assets/57a55114-4df7-428b-8bf5-c39169490f62" />
+
+
+Run: kubectl rollout status deployment/streaming
+
+
+<img width="449" height="46" alt="image" src="https://github.com/user-attachments/assets/739d5dad-dcd3-4362-8461-f636d263277e" />
+
+Run: helm lint helm\streamingapp
+
+
+
+<img width="464" height="224" alt="image" src="https://github.com/user-attachments/assets/425a5559-de7c-4e6b-8eb9-b73040d3bef1" /> 
+
+========================= 
+
+Step 2 — Verify the application
+
+Open: http://localhost
+
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/2664935e-a794-4ce9-9091-fda57e26fca8" /> 
+
+=========================== 
+
+Step 3 — Test self-healing 
+
+
+---------------------------- 
+
+First get the streaming Pods:
+
+
+Run: kubectl get pods -l app=streaming
+
+
+<img width="374" height="77" alt="image" src="https://github.com/user-attachments/assets/9b8e1989-e5f9-4dd0-9f9f-ff48e8fffb39" />
+
+------------------------- 
+
+Choose one of the three Pod names and delete it: 
+
+Run: kubectl delete pod streaming-5b44ffd75-nlkqx 
+
+
+<img width="484" height="39" alt="image" src="https://github.com/user-attachments/assets/d50cccf4-912f-4218-8119-ae1b1c673ddd" />
+
+--------------------------- 
+
+Then immediately:
+
+Run: kubectl get pods -l app=streaming
+
+
+
+<img width="456" height="87" alt="image" src="https://github.com/user-attachments/assets/79f4c95e-14ba-494b-be33-20436e47ee6b" />
+
+----------------------------- 
+
+Kubernetes creates a replacement.
+
+Run: kubectl get pods -l app=streaming
+
+
+<img width="401" height="94" alt="image" src="https://github.com/user-attachments/assets/ac46a14c-f3b7-47e4-9566-3c26061740a3" />
+
+---------------------- 
+
+This gives us evidence for self-healing + replica management. 
+
+So self-healing is successfully demonstrated: the Deployment maintained the desired 3 replicas after a pod was manually deleted. 
+
+======================== 
+
+Phase 9 — Docker Hub 
+
+Step 9.1 — Confirm the images 
+
+
+Run: docker images | findstr streamingapp
+
+
+<img width="521" height="174" alt="image" src="https://github.com/user-attachments/assets/9536c66b-168d-432e-8d6a-0991b32bd027" />
+
+=============== 
+
+Step 9.2 — Login to Docker Hub
+Run: docker login
+
+
+<img width="635" height="111" alt="image" src="https://github.com/user-attachments/assets/a26e1925-fc12-46c5-9a29-ddeb2a2f1410" />
+
+----------------------------- 
+
+Step 9.4 — Tag the images
+
+---------------- 
+
+Run this exact block:
+docker tag streamingapp-auth:latest sandhya1812/streamingapp-auth:1.0.0
+docker tag streamingapp-streaming:latest sandhya1812/streamingapp-streaming:1.0.0
+docker tag streamingapp-admin:latest sandhya1812/streamingapp-admin:1.0.0
+docker tag streamingapp-chat:latest sandhya1812/streamingapp-chat:1.0.0
+docker tag streamingapp-frontend:latest sandhya1812/streamingapp-frontend:1.0.0 
+
+Run:
+docker images | findstr sandhya1812
+
+
+<img width="664" height="272" alt="image" src="https://github.com/user-attachments/assets/41605840-99a0-404a-9e7f-1265517c37db" />
+
+Run: 
+docker tag streamingapp-auth:latest sandhya1812/streamingapp-auth:1.0.0
+docker images | findstr sandhya1812  
+
+
+<img width="645" height="170" alt="image" src="https://github.com/user-attachments/assets/3a2d5ffc-be04-4491-8dbf-8e7b9d88d455" />
+
+
+
+
+
+
 
 
 
