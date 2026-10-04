@@ -2030,27 +2030,6 @@ Current Kubernetes work completed
 
 =================================== 
 
-We now have:
-
-You now have:
-
-Requirement	Status
-MongoDB Deployment + PVC	✅
-Auth Deployment + Service	✅
-Streaming Deployment + Service	✅
-Admin Deployment + Service	✅
-Chat Deployment + Service	✅
-Frontend Deployment + Service	✅
-Kubernetes ConfigMap	✅
-Kubernetes Secret	✅
-Scaling to 3 replicas	✅
-Rolling update	✅
-NGINX Ingress Controller	✅
-Ingress routing	✅
-StreamFlix accessible through localhost	✅
--------------------------------- 
-================================== 
-
 Final Kubernetes evidence: 
 
 =========================== 
@@ -3562,9 +3541,513 @@ Run:
 
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 759910672539.dkr.ecr.us-east-1.amazonaws.com
 
-Step 10.3A — Test the ECR endpoint from Windows
+
+======================= 
+
+Phase 10 — Step 10.4: Tag images for ECR
+
+=============================== 
+
+Run: 
+docker tag sandhya1812/streamingapp-auth:1.0.0 759910672539.dkr.ecr.us-east-1.amazonaws.com/streamingapp-auth:1.0.0
+docker tag sandhya1812/streamingapp-streaming:1.0.0 759910672539.dkr.ecr.us-east-1.amazonaws.com/streamingapp-streaming:1.0.0
+docker tag sandhya1812/streamingapp-admin:1.0.0 759910672539.dkr.ecr.us-east-1.amazonaws.com/streamingapp-admin:1.0.0
+docker tag sandhya1812/streamingapp-chat:1.0.0 759910672539.dkr.ecr.us-east-1.amazonaws.com/streamingapp-chat:1.0.0
+docker tag sandhya1812/streamingapp-frontend:1.0.0 759910672539.dkr.ecr.us-east-1.amazonaws.com/streamingapp-frontend:1.0.0 
+
+<img width="672" height="131" alt="image" src="https://github.com/user-attachments/assets/22fd4b7a-d60d-4224-8eea-0de5658b57ba" />
+
+
+Verify the tags
+Run: docker images | findstr 759910672539
+
+<img width="523" height="170" alt="image" src="https://github.com/user-attachments/assets/6c32eacb-05e4-475e-84f7-c356223816a7" />
+
+=============================== 
+
+Step 10.5 — Push the five images 
+
+================================ 
+
 Run:
- nslookup 759910672539.dkr.ecr.us-east-1.amazonaws.com
+docker push 759910672539.dkr.ecr.us-east-1.amazonaws.com/streamingapp-auth:1.0.0
+docker push 759910672539.dkr.ecr.us-east-1.amazonaws.com/streamingapp-streaming:1.0.0
+docker push 759910672539.dkr.ecr.us-east-1.amazonaws.com/streamingapp-admin:1.0.0
+docker push 759910672539.dkr.ecr.us-east-1.amazonaws.com/streamingapp-chat:1.0.0
+docker push 759910672539.dkr.ecr.us-east-1.amazonaws.com/streamingapp-frontend:1.0.0 
+
+<img width="671" height="314" alt="image" src="https://github.com/user-attachments/assets/86e925a1-cd1f-4f79-adb9-1ef9bcbf496e" />
+
+
+
+<img width="663" height="312" alt="image" src="https://github.com/user-attachments/assets/32a65e68-9d96-4dcf-b394-5fcd27faaf05" />
+
+
+
+<img width="642" height="185" alt="image" src="https://github.com/user-attachments/assets/8ee8e5a9-1182-4f7a-8381-e7f75aa06a55" />
+
+
+Phase 10 — AWS ECR is now COMPLETE:
+All five application images were successfully pushed to Amazon ECR with version 1.0.0:
+
+====================================================== 
+
+Phase 10A — MongoDB Atlas
+
+Step 1 — Open MongoDB Atlas
+Open:
+MongoDB Atlas
+Sign in with your MongoDB account.
+
+==================================== 
+
+Step 10A.2 — Create the Atlas project and cluster
+
+Create a project:
+On the Atlas dashboard:
+1. Click Projects.
+2. Click New Project.
+3. Enter: StreamingApp
+4. Click Next / Create Project.
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/48dae0fd-9920-4e37-b647-e190d0c60875" />
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/f88d6469-0a95-4086-bf84-708130f6ccfd" />
+
+=========================== 
+
+Step 3 — Create the MongoDB cluster
+Inside the StreamingApp project: 
+
+
+1. Click Create a Cluster.
+
+   
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/3209e72d-3b7d-42fb-841b-54dd0ff121ea" />
+
+
+
+2. Select the Free / M0 option.
+
+   <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/7106275b-a10d-4892-a464-af9e734507fa" />
+
+
+3. Choose a cloud provider.
+For example: AWS
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/c144454f-609f-4de3-b3d7-eb6565946db2" />
+
+
+5. Choose a region reasonably close to your deployment. Since your AWS work is currently in us-east-1, you can select an AWS region available for the free tier there.
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/b1da0020-ee11-4131-a890-30f031e8b14c" />
+
+
+
+7. Give the cluster a name, for example: StreamingAppCluster
+
+8. Click Create Cluster
+9. A dialogue box opens, for username and password, close it and create a user friendly password.:
+   . Go to Database Acces, in the left menu, go to:
+     Security → Database Access
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/a8cc4590-92bf-410c-8cbe-61e018ea7746" />
+
+
+   . Create our application user:
+    . Click: Add New Database User
+    . Create Username: streamingapp-app-user1 
+    . For authentication, use a password and create a new strong password.
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ff3dbcc3-3198-4e1b-bc45-73f01c592485" /> 
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/6425aff5-a4ef-4d52-ab1d-734e9e1292c3" /> 
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/f364d252-eec6-4a69-820b-bbd928ea713d" />
+
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/8f5e034d-629f-46ea-9004-c25a2e8f1fe8" />
+
+
+. Database User Privileges
+  choose the option equivalent to: Read and write to any database
+
+. Rest all keep it as it is.
+. Then click: Add User
+
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/21ee2e67-89e7-4958-9eb6-7bde20997546" />
+
+============== 
+
+Step 4 — Configure Network Access
+
+4.1 Open IP Access List
+In MongoDB Atlas, on the left side, under:
+NETWORK ACCESS, click: IP Access List
+You should see the IP address that Atlas automatically added when the cluster was created.
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/34284988-a2e5-449c-b1a2-f183cec86f61" />
+
+4.3 Add the IP
+On the IP Access List page:
+1. Click Add IP Address.
+2. Let's add temporary access for testing the AWS/EKS deployment.
+3. Access List Entry : 
+   Enter: 0.0.0.0/0
+4. Comment
+   Enter: StreamingApp development and EKS testing
+
+5. Temporary access
+   For initial testing, turn the temporary entry switch ON and select a suitable duration, such as 1 week, if available. This will ensure the broad access entry expires automatically.
+
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/be73d420-b381-4700-a16b-0067d4cb981f" />
+
+6. Confirm
+   Click the green Confirm button.
+
+
+   <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/02dbb9c4-e2ea-42e5-b5fd-9b3bf3bee1ad" />
+
+
+=============================== 
+
+Phase 10A — Step 5: Get the MongoDB connection string
+Now let's get the connection string for our streamingapp-app-user1 user. 
+
+----------------------- 
+
+5.1 Go to Clusters
+On the left side, click: Clusters
+You should see: StreamingAppCluster
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/b91a8471-577b-4152-ba64-db9c852cb361" />
+
+
+
+---------------------------- 
+
+5.2 Click Connect
+On the StreamingAppCluster row, click: Connect 
+
+A window will appear: Connect to StreamingAppCluster  
+
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ab7e753d-e2b7-447f-bf6d-5f6671277c14" />
+
+-------------------- 
+
+5.3 Choose Drivers
+    Select: Drivers 
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/cf44094a-1f73-4408-afa1-1e39cf4f9a81" />
+
+
+. Keep Language: JavaScript
+. Client Library: Node.js Driver
+
+. Copy the Atlas connection string :
+mongodb+srv://<db_username>:<db_password>@streamingappcluster.se9p9lu.mongodb.net/?appName=StreamingAppCluster
+
+. Replace: <db_username> --> with: streamingapp-app-user1
+
+. Replace: <db_password> --> with the new password we created for streamingapp-app-user1.
+
+. Then change the part:.mongodb.net/?appName= --> to:.mongodb.net/streamingapp?retryWrites=true&w=majority
+
+
+Connection string is:
+
+mongodb+srv://streamingapp-app-user1:<db_password>@streamingappcluster.se9p9lu.mongodb.net/streamingapp?retryWrites=true&w=majority 
+
+Note replace the <db_password> with the actual password
+
+-------------------------- 
+
+Notes:
+
+Why streamingapp?
+Because all the four backend services should use the same database named streamingapp.    
+
+==============================================
+
+Phase 10A — Step 6: Test the Atlas Connection
+
+==================================================
+
+. we shall test that the streamingapp-app-user1 credentials can actually connect to StreamingAppCluster.
+
+. Since our project is Node.js-based, we'll test it from your Windows/PowerShell environment.
+
+----------------------------------------------- 
+
+6.1 Check Node.js/npm
+Because the project uses Node.js:
+
+Run:
+npm.cmd --version 
+
+Run:
+Get-Content .\backend\authService\package.json | Select-String "mongoose|mongodb"
+
+
+<img width="635" height="116" alt="image" src="https://github.com/user-attachments/assets/b8e91d56-0050-45e2-9823-2f7baf1f8e82" />
+
+----------------------------- 
+
+Step 6.2 - Install Auth Service dependencies
+
+============================= 
+
+Step 6.2.1 — Create a temporary test file
+
+In PowerShell,
+Run: notepad atlas-test.js 
+
+paste the below code:
+
+const mongoose = require("mongoose");
+
+const uri = "PASTE_YOUR_ATLAS_CONNECTION_STRING_HERE";
+
+mongoose.connect(uri)
+  .then(() => {
+    console.log("MongoDB Atlas connection SUCCESSFUL");
+    return mongoose.disconnect();
+  })
+  .then(() => {
+    console.log("MongoDB connection closed");
+  })
+  .catch((err) => {
+    console.error("MongoDB Atlas connection FAILED");
+    console.error(err.message);
+    process.exit(1);
+  }); 
+
+  ======================= 
+
+Step 6.2.2 — Put your connection string in the file
+Replace: PASTE_YOUR_ATLAS_CONNECTION_STRING_HERE --> with your actual Atlas connection string. 
+and Save.
+
+
+--------------------------------------- 
+
+
+Step 6.2.3  — Install the Auth Service dependencies
+
+Run:
+cd C:\Users\sandy\StreamingApp\backend\authService 
+
+Run:
+npm.cmd install
+
+<img width="670" height="305" alt="image" src="https://github.com/user-attachments/assets/df608672-9916-411d-b505-71dcfba22d6d" />
+
+-------------------------- 
+
+Step 6.3 - Verify Mongoose
+
+Run:
+dir node_modules\mongoose 
+
+<img width="539" height="253" alt="image" src="https://github.com/user-attachments/assets/93ac304e-ba24-4959-bd44-c0cc4d950dbf" />
+
+--------- 
+
+Step 6.4 - Create a temporary Atlas connection test
+
+Return to the project root:
+cd C:\Users\sandy\StreamingApp 
+
+------------ 
+
+Create the temporary file:
+
+Run: notepad atlas-test.js  
+
+replace with below code:
+
+const mongoose = require("./backend/authService/node_modules/mongoose");
+
+const uri = "YOUR_ATLAS_CONNECTION_STRING";
+
+mongoose.connect(uri)
+  .then(() => {
+    console.log("MongoDB Atlas connection SUCCESSFUL");
+    return mongoose.disconnect();
+  })
+  .then(() => {
+    console.log("MongoDB connection closed");
+  })
+  .catch((err) => {
+    console.error("MongoDB Atlas connection FAILED");
+    console.error(err.message);
+    process.exit(1);
+  }); 
+
+  ====================  
+
+  . Replace YOUR_ATLAS_CONNECTION_STRING with the private Atlas connection string.
+  . Save and close Notepad 
+
+------------------------ 
+
+Step 6.5 - Run the Atlas connection test
+
+Run: node atlas-test.js
+
+Error: 
+
+<img width="482" height="53" alt="image" src="https://github.com/user-attachments/assets/14024a6c-b2cf-4ee5-98cc-549ddd929c2f" />
+
+-------------------------- 
+
+Step 6.6 — Test DNS from PowerShell
+Run this:
+nslookup streamingappcluster.se9p9lu.mongodb.net
+
+
+<img width="563" height="295" alt="image" src="https://github.com/user-attachments/assets/2a1fcb67-c5e0-4c3f-a8db-f7ce76789c82" />
+
+------------------------- 
+
+<img width="652" height="259" alt="image" src="https://github.com/user-attachments/assets/634b10b8-912b-48f5-8f1f-e0add90c3725" /> 
+
+
+<img width="494" height="268" alt="image" src="https://github.com/user-attachments/assets/491a6850-96b1-4a4b-ae19-af7c537ec4f2" />
+
+
+
+<img width="596" height="147" alt="image" src="https://github.com/user-attachments/assets/60be4639-9914-4986-b405-e82292a7a10c" />  
+
+
+--------------------------------------- 
+
+
+Step 6.7 - Test Atlas TXT DNS record 
+
+Run: nslookup -type=TXT streamingappcluster.se9p9lu.mongodb.net 8.8.8.8
+
+
+
+<img width="671" height="256" alt="image" src="https://github.com/user-attachments/assets/67ff7222-fb84-4213-b54f-6b475382f906" />
+
+
+<img width="576" height="125" alt="image" src="https://github.com/user-attachments/assets/38391524-96ee-443d-91de-5206538d0600" />
+
+-------------------------- 
+
+6.8 Test direct connectivity to Atlas
+Use one of the Atlas hosts returned by the SRV lookup:
+
+Run: Test-NetConnection ac-wrndmtd-shard-00-01.se9p9lu.mongodb.net -Port 27017
+
+
+<img width="623" height="113" alt="image" src="https://github.com/user-attachments/assets/dd581e59-c3c7-4100-a80c-4649d2b3954b" />
+
+
+Note: If it returns False, test the other Atlas nodes:
+Run: 
+Test-NetConnection ac-wrndmtd-shard-00-00.se9p9lu.mongodb.net -Port 27017 
+Test-NetConnection ac-wrndmtd-shard-00-02.se9p9lu.mongodb.net -Port 27017
+
+
+----------------------- 
+
+6.9 Test general internet connectivity
+We also verified that normal HTTPS connectivity works: 
+
+Run: Test-NetConnection google.com -Port 443
+
+Our result was:
+TcpTestSucceeded : True 
+So general internet connectivity is working.
+
+---------------------- 
+
+Therefore, we temporarily bypassed the SRV lookup for diagnostic purposes.
+
+Phase 10A — Step 6.10: Test Using Direct MongoDB Hosts
+
+Lets Verify that the StreamingApp backend can connect to the MongoDB Atlas cluster using Node.js and Mongoose.
+
+From the successful SRV lookup, we obtained:
+ac-wrndmtd-shard-00-00.se9p9lu.mongodb.net
+ac-wrndmtd-shard-00-01.se9p9lu.mongodb.net
+ac-wrndmtd-shard-00-02.se9p9lu.mongodb.net
+
+The temporary connection string:
+
+mongodb://streamingapp-app-user1:YOUR_PASSWORD@ac-wrndmtd-shard-00-00.se9p9lu.mongodb.net:27017,ac-wrndmtd-shard-00-01.se9p9lu.mongodb.net:27017,ac-wrndmtd-shard-00-02.se9p9lu.mongodb.net:27017/streamingapp?authSource=admin&replicaSet=atlas-12tkog-shard-0&tls=true&retryWrites=true&w=majority
+Run: node atlas-test.js
+
+Correct the Temporary Test File
+We will use: atlas-test.js
+
+<img width="323" height="26" alt="image" src="https://github.com/user-attachments/assets/16787d50-fa67-4427-ac50-027b99339203" />
+
+Paste the below code in Test file:
+const mongoose = require("./backend/authService/node_modules/mongoose");
+
+const uri = "YOUR_ATLAS_CONNECTION_STRING";
+
+mongoose.connect(uri)
+  .then(() => {
+    console.log("MongoDB Atlas connection SUCCESSFUL");
+    return mongoose.disconnect();
+  })
+  .then(() => {
+    console.log("MongoDB connection closed");
+  })
+  .catch((err) => {
+    console.error("MongoDB Atlas connection FAILED");
+    console.error(err.message);
+    process.exit(1);
+  }); 
+
+  ------------- 
+
+Step 6.11 - Correct the Temporary Test File
+
+  Run: node atlas-test.js
+
+------------------------------- 
+
+Step 6.12 — Successful Atlas Connection
+
+---------------------------------- 
+
+Step 6.13 — Remove Temporary Test File
+
+  Remove Temporary Test File:
+  Run: Remove-Item .\atlas-test.js
+
+  Verify that it is gone:
+  Run: Test-Path .\atlas-test.js
+
+
+<img width="359" height="87" alt="image" src="https://github.com/user-attachments/assets/9a4420d1-76cb-4505-98b6-2cfc3ef95eb2" />
+
+
+====================================== 
+
+PHASE 10B — AWS S3 
+
+============================= 
+
+objective: 
+Configure Amazon S3 for the StreamingApp's:
+- Video uploads
+- Thumbnail uploads
+- Video playback/storage
+The Admin Service and Streaming Service need the AWS S3 configuration for these operations.
+
+
+
+
+
 
 
 ===================================
