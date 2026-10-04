@@ -4045,6 +4045,62 @@ Configure Amazon S3 for the StreamingApp's:
 The Admin Service and Streaming Service need the AWS S3 configuration for these operations.
 
 
+--------------------------------- 
+
+Step 10B.1 — Create the S3 bucket
+We will create the bucket in us-east-1, because our ECR and EKS environment are in us-east-1.
+1. Open AWS Console
+Go to:
+AWS Console → S3 → Create bucket
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/22ab56a0-99f8-40cb-8fb1-da7e447e236d" />
+
+
+
+3. Bucket name
+Use:
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/d5bc888c-d1d9-49c0-904a-45d0ff017fc9" />
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/fc3aea29-4f1f-40ac-85ab-0e4014abe016" />
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/44c87d7e-86ef-48b3-a366-dc84339e9424" />
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/2a42e237-47c5-4960-8449-fa6856b8c490" /> 
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/8218e457-5cba-4169-9f38-7b7de3ea9382" />
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/c9901d84-c6dc-48b7-82b2-cc46872498d9" />
+
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ab179753-7a3b-4217-b878-d3678ec292be" />
+
+
+Click Create Bucket:
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/b93216e8-e83f-48d0-89fc-143f3bd9e17b" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
