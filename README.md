@@ -3487,23 +3487,84 @@ docker images | findstr sandhya1812
 
 <img width="645" height="170" alt="image" src="https://github.com/user-attachments/assets/3a2d5ffc-be04-4491-8dbf-8e7b9d88d455" />
 
+===================== 
+
+Phase 9 — Step 9.3: Push to Docker Hub 
 
 
 
+Run:
+docker push sandhya1812/streamingapp-auth:1.0.0
+docker push sandhya1812/streamingapp-streaming:1.0.0
+docker push sandhya1812/streamingapp-admin:1.0.0
+docker push sandhya1812/streamingapp-chat:1.0.0
+docker push sandhya1812/streamingapp-frontend:1.0.0
+
+
+<img width="584" height="319" alt="image" src="https://github.com/user-attachments/assets/1b1e4e00-4cbc-4269-8a73-90d45e6d555e" />
 
 
 
+<img width="649" height="317" alt="image" src="https://github.com/user-attachments/assets/fe192fce-b13b-4cf1-9655-03eede03810c" />
+
+
+<img width="677" height="186" alt="image" src="https://github.com/user-attachments/assets/824ab59b-3fa7-420e-a219-55fbf79cac6f" />
+
+
+================================= 
+
+Phase 10 — AWS ECR 
+
+=========================== 
+
+Step 10.1 — Confirm AWS account and region
+
+Run: aws sts get-caller-identity 
+
+
+<img width="424" height="78" alt="image" src="https://github.com/user-attachments/assets/fdbc1574-00d7-4b77-a3d0-74a1ccfe72f6" />
 
 
 
+Run: aws configure get region
 
 
+<img width="374" height="45" alt="image" src="https://github.com/user-attachments/assets/4656a09a-b22c-440e-b2f6-07b8929fb986" />
 
 
+=============================== 
+
+Step 10.2 — Create the five ECR repositories
+
+Run:
+
+aws ecr create-repository --repository-name streamingapp-auth --region us-east-1
+aws ecr create-repository --repository-name streamingapp-streaming --region us-east-1
+aws ecr create-repository --repository-name streamingapp-admin --region us-east-1
+aws ecr create-repository --repository-name streamingapp-chat --region us-east-1
+aws ecr create-repository --repository-name streamingapp-frontend --region us-east-1
+
+----------------- 
+
+Then verify all five
+
+Run:
+
+aws ecr describe-repositories --region us-east-1 --query "repositories[].repositoryUri" --output table
 
 
+<img width="653" height="193" alt="image" src="https://github.com/user-attachments/assets/8bf1b589-be5a-4a77-baf7-90e68e478366" />
 
+========================= 
 
+Step 10.3 — Authenticate Docker with Amazon ECR
+Run:
+
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 759910672539.dkr.ecr.us-east-1.amazonaws.com
+
+Step 10.3A — Test the ECR endpoint from Windows
+Run:
+ nslookup 759910672539.dkr.ecr.us-east-1.amazonaws.com
 
 
 ===================================
