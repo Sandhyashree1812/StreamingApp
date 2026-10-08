@@ -4528,10 +4528,7 @@ Run: git diff -- .env.example
 
 Step 11.2.2 — Add all our project files
 Run: git add .env.example .gitignore Jenkinsfile k8s helm Screenshots
-
-
-
-git status
+Run: git status
 
 
 <img width="680" height="218" alt="image" src="https://github.com/user-attachments/assets/2b433b01-4a18-4380-aaad-c30166d46497" />
@@ -4542,7 +4539,9 @@ git status
 <img width="636" height="415" alt="image" src="https://github.com/user-attachments/assets/4a295be8-5a56-40b7-bec2-c5c2fad56536" />
 
 
-
+Step 11.2.3 — Commit
+Run: git commit -m "Add Kubernetes Helm Jenkins and AWS deployment configuration"
+git status
 
 ---------------------------- 
 
@@ -4550,6 +4549,350 @@ git status
 
 Step 11.2.4 — Push to GitHub
 Run: git push origin main
+Run: git status
+Run: git log --oneline -3
+
+<img width="639" height="254" alt="image" src="https://github.com/user-attachments/assets/336739f9-a143-4061-855f-e08596afebf5" />
+
+
+-------------------------------- 
+
+Step 11.2 — Check whether Jenkins is already available 
+
+Open your browser and check whether you have a Jenkins URL such as:
+http://<EC2-PUBLIC-IP>:8080
+
+
+Notes:
+
+The EC2 Public IP is the public IPv4 address assigned to your Jenkins EC2 instance. You can find it in the AWS Console.
+
+---------------- 
+
+Step 1 — Open EC2
+Go to AWS Console → EC2 → Instances.
+Make sure you are in:
+Region: us-east-1 (N. Virginia)
+
+Step 2 — Find your Jenkins instance
+
+So the next step is to create/use a dedicated Jenkins EC2 instance.
+
+Click Launch instances in the top-right.
+
+1. Name
+In Name, enter:
+StreamingApp-Jenkins
+
+2. Application and OS Image
+Amazon Linux 2023 AMI
+Keep this selected.
+
+3. Instance type
+Scroll down to Instance type.
+Select:
+t3.small
+-------------------------------- 
+Notes:
+Why:
+- 2 vCPUs
+- 2 GiB RAM
+- Better suited to Jenkins + Docker than t2.micro
+- Your Jenkins server is separate from your laptop, so it won't consume your WSL RAM.
+If AWS shows a free-tier eligibility warning, don't switch randomly—tell me what it shows and I'll guide you.
+
+------------------------- 
+
+4. Key pair
+
+Click:
+Create new key pair
+Use:
+Key pair name:
+streamingapp-jenkins-key
+Key pair type: RSA
+Private key format: .pem
+
+Next
+Scroll slightly down to Network settings.
+We need to configure:
+SSH
+1. SSH — change Anywhere to My IP
+
+ Notes:
+My IP
+It should then show your current public IP with /32.
+This keeps SSH access restricted to your computer.
+
+
+Storage
+Currently:
+8 GiB   gp3 Change 8 to: 20
+The Free tier eligible up to 30 GB message means 20 GiB is within that displayed allowance. 
+
+File systems
+Leave:
+None 
+
+3. Configure the rules
+After selecting Create security group, you should see the firewall rules again.
+Set: SSH
+Source:       My IP
+
+Click Launch the instance
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/3cf65a8e-9701-4a76-9f81-1849d9791964" />
+
+4. Go to EC2 Instances
+Click Instances from the EC2 navigation.
+Find: StreamingApp-Jenkins
+
+It should soon show: Running 
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/33bcc608-687d-4b5e-998f-9a57c38b477e" />
+
+
+
+
+5. Find the Security Group
+In the lower Details section, find:
+Security groups
+You should see something like:
+Click the security-group name.launch-wizard-6
+
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/15b7c59d-ae14-4620-bbdb-9640878c1a74" />
+
+
+
+
+
+Step 11.3 — Add Jenkins port 8080
+1. Click the security group
+Click this link:
+sg-0be0ae57837225dfc (launch-wizard-6)
+It will open the Security Group details.
+
+2. Go to Inbound rules
+Click:
+Inbound rules
+Then click:
+Edit inbound rules
+3. Add the rule
+Click:
+Add rule
+
+3. A second row will appear.
+Set the new row to:
+- Type: Custom TCP
+- Protocol: TCP (AWS will select this automatically)
+- Port range: 8080
+- Source: My IP
+- Description: Jenkins (optional)
+
+Then click Save rules.
+
+4. Go back to your EC2 instance
+Go to:
+EC2 → Instances → StreamingApp-Jenkins
+Select the instance.
+
+5. Get the Public IPv4 address
+In the Details tab, find:
+Public IPv4 address
+Instance state: Running
+Status check: 2/2 checks passed
+
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/0a3b556c-b019-4551-83d0-8d5766a5cb36" />
+
+----------------- 
+
+Step 11.4 — Connect to the Jenkins EC2 server
+We'll now connect from your Windows PowerShell.
+1. Locate your .pem file
+You created:
+streamingapp-jenkins-key.pem
+
+Step 1 — Verify the key
+Run:
+Test-Path "C:\Users\vivek\Downloads\streamingapp-jenkins-key.pem"
+It should return: True
+
+Step 2 — Connect to Jenkins EC2
+If it returns True, run:
+ssh -i "C:\Users\vivek\Downloads\streamingapp-jenkins-key.pem" ec2-user@3.90.255.63
+
+The first connection may ask:
+Are you sure you want to continue connecting (yes/no/[fingerprint])?
+
+Type:
+yes
+
+You should then get something similar to:
+[ec2-user@ip-172-31-39-226 ~]$
+
+<img width="594" height="270" alt="image" src="https://github.com/user-attachments/assets/7236a334-a50f-4cd3-8c56-599ab2375a20" />
+
+---------- 
+
+SSH connection is successful.
+
+we are now inside the new AWS EC2 server:
+[ec2-user@ip-172-31-39-226 ~]$
+
+And it is running Amazon Linux 2023. 
+This is a major checkpoint:
+
+------------------------- 
+
+Step 11.5 — Install Jenkins prerequisites
+Stay in this EC2 terminal. Do not close it.
+First, update the Amazon Linux packages:
+run: sudo dnf update -y
+
+<img width="409" height="68" alt="image" src="https://github.com/user-attachments/assets/6068f8a1-20cc-4c26-b3b4-3892cdc5d4a8" />
+
+
+
+Then install Java, Git, Docker, and utilities:
+Run: sudo dnf install -y java-21-amazon-corretto git docker
+
+After installation, verify:
+java -version
+git --version
+docker --version 
+
+Then start Docker
+sudo systemctl enable --now docker
+
+Verify:
+sudo systemctl status docker --no-pager
+
+You want:
+Active: active (running) 
+
+------------ 
+
+PHASE 11 — Jenkins Setup
+
+Step 11.6 — Allow ec2-user to use Docker
+Run this inside the EC2 terminal:
+sudo usermod -aG docker ec2-user
+
+Then verify the group:
+Run: groups
+
+Step 11.7 — Install Jenkins
+Run:
+sudo dnf install -y wget
+
+Then add the Jenkins repository:
+
+Run:
+sudo wget -O /etc/yum.repos.d/jenkins.repo \
+https://pkg.jenkins.io/redhat-stable/jenkins.repo 
+
+Import the Jenkins key:
+sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2026.key
+
+Then install Jenkins:
+sudo dnf install -y jenkins
+
+Step 11.8 — Start Jenkins
+sudo systemctl enable --now jenkins
+
+Check:
+sudo systemctl status jenkins --no-pager
+
+<img width="668" height="341" alt="image" src="https://github.com/user-attachments/assets/a357c639-394b-4476-85c9-c45d415024e1" />
+
+
+
+We will see Active: active (running)
+
+
+--------------- 
+
+Step 11.9 — Get the Jenkins initial password
+Run:
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+Copy that password somewhere safe.
+
+Step 11.10 — Open Jenkins port 8080
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/022fea71-ed33-479e-bde3-d9597f9eff03" />
+
+
+Step 11.11 — Install Jenkins plugins
+On this screen, choose:
+ Install suggested plugins
+
+ Step 11.12 — Create Jenkins administrator
+After the plugins finish, Jenkins will show Create First Admin User.
+Enter something like:
+- Username: admin
+- Password: create your own strong password
+- Full name: Sandhya
+- Email: your email address
+Then click Save and Continue.
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/3d070092-c5b6-4735-b58d-0efaff785b1d" />
+
+
+Step 11.13 — Jenkins URL
+If Jenkins asks for the URL, keep:
+http://3.90.255.63:8080/
+
+Then click Save and Finish. 
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/91e5baeb-939b-40c5-a7e9-05d42f43b15a" />
+
+
+<img width="1902" height="996" alt="image" src="https://github.com/user-attachments/assets/4f7229e4-effd-42df-ac89-4bdde5bf417c" />
+
+
+
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/2b384186-c0fa-4911-a714-fffc46d6c760" />
+
+
+--------------------- 
+
+Step 11.14 — Fix Jenkins Build Node
+Go back to your EC2 SSH terminal where you have:
+[ec2-user@ip-172-31-39-226 ~]$
+
+
+1. Give Jenkins access to Docker
+Run: sudo usermod -aG docker jenkins
+
+2. Give Jenkins access to the Docker socket
+Run: sudo systemctl restart docker
+
+3. Restart Jenkins
+Run: sudo systemctl restart jenkins
+
+Wait about 10 seconds, then check:
+Run: sudo systemctl status jenkins --no-pager
+
+<img width="668" height="335" alt="image" src="https://github.com/user-attachments/assets/11c27462-bbb2-4abc-bbb8-3c4e4ee7ee17" />
+
+
+Step 11.15 — Check the Jenkins node
+Refresh your Jenkins browser page:
+http://3.90.255.63:8080
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -4585,6 +4928,8 @@ As the GitHub has a newer commit that your local branch doesn't have.
 Run: git pull --rebase origin main
 
 then run: git push origin main
+
+<img width="516" height="383" alt="image" src="https://github.com/user-attachments/assets/06c44224-3b5b-461a-b81d-41ee7ad7ad1f" />
 
 
 Phase 15 — GitHub synchronization COMPLETE
