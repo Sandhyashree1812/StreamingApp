@@ -4082,6 +4082,474 @@ Click Create Bucket:
 
 
 
+------------------- 
+
+PHASE 10B — AWS S3 Configuration 
+
+====================== 
+
+Step 10B.3 — Create the IAM Policy 
+
+---------------------------------- 
+
+Step 10B.3.1 — Open IAM
+
+----------------------------------- 
+
+
+
+In AWS Console: Services → IAM
+Then on the left menu select: Policies
+Click: Create policy
+
+--------------------------- 
+
+Step 10B.3.2 — Select JSON
+
+----------------------------- 
+
+At the top of the policy editor, select:
+JSON
+Delete the existing sample JSON and paste this:
+
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ListStreamingAppBucket",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket"
+      ],
+      "Resource": "arn:aws:s3:::streamingapp-sandhya-259072552251-us-east-1-an"
+    },
+    {
+      "Sid": "StreamingAppObjectAccess",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::streamingapp-sandhya-259072552251-us-east-1-an/*"
+    }
+  ]
+} 
+
+--------------------------------- 
+
+
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/98e92b81-9dfa-42ab-a871-3cf7322c654c" />
+
+
+
+Click: Next
+
+
+------------------------ 
+
+
+Notes:
+
+Why these permissions?
+Permission	Purpose
+s3:ListBucket	Allows the application to list objects in the bucket
+s3:GetObject	Allows the application to retrieve uploaded videos/thumbnails
+s3:PutObject	Allows Admin/Streaming services to upload files
+s3:DeleteObject	Allows the application to delete files
+
+
+The guide specifically requires PutObject and DeleteObject; GetObject is included here because the application also needs to retrieve stored media for playback. The guide notes that playable/viewable URLs require either public read or a CDN arrangement.    Pasted markdown
+Important: We are keeping the bucket itself private. We are not enabling public access. 
+
+------------------------------ 
+
+
+Step 10B.3.3 — Review policy 
+
+--------------------- 
+
+
+The AWS shows the policy review page, give it this name: StreamingAppS3AccessPolicy
+
+Description: S3 access for StreamingApp video and thumbnail storage
+
+Then click: Create policy
+
+
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/b654ddaf-c45c-4562-8018-21beeb65a0d3" />
+
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/870be7c2-0016-4dca-bc6e-179ba63c182c" />
+
+
+
+--------------------------- 
+
+Step 10B.4 — Create the StreamingApp IAM User
+
+------------------------- 
+
+Now we'll create a dedicated IAM user for the application and attach the policy we just created.
+
+1. In the left IAM menu
+Click: IAM users
+Then click: Create user
+2. User name Enter: streamingapp-s3-user
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/8f5e5637-b6a2-4a0b-a99c-d97e6a6e5c1e" />
+
+
+
+Click Next
+
+------------  
+
+Step 2 — Set permissions.
+
+
+Select: Attach policies directly
+Then search for: StreamingAppS3AccessPolicy
+
+Note:
+Select only that policy.
+Do not select AdministratorAccess or AmazonS3FullAccess.
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/f023ca0c-1cf4-4714-998c-e6ab1fa1b3b5" />
+
+
+------------------ 
+
+Step 10B.4.2 — Permission boundary 
+Leave:
+Set permissions boundary — optional
+
+click Next. 
+
+
+-------------- 
+
+Step 10B.4.3 — Create the user 
+
+Click Create user.
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/a787f66e-9c57-494b-82ae-e11b2d1ad78e" />
+
+----------------- 
+
+PHASE 10B — AWS S3 Configuration
+Step 10B.5 — Create the S3 Access Key
+
+10B.5.1 — Open the new user
+On the IAM users page, click:
+streamingapp-s3-user
+
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/9ea49a85-fad3-4ae7-bb77-016094788756" />
+
+-------------------- 
+
+
+10B.5.1 — Open Security credentials
+
+Click: Security credentials
+at the bottom of the page.
+Then find:
+Access keys
+and click:
+Create access key
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/cac03e38-5e29-4319-bd0d-2b2f73ca3c8f" />
+
+
+------------------ 
+
+10B.5.2 — Select the use case
+
+AWS will ask what the access key will be used for.
+
+Select the option for:
+Application running outside AWS
+Then click Next / Create access key, depending on what AWS shows.
+
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/9f9c72bd-e5a2-4871-acde-f9ef7532c0fe" />
+
+
+PHASE 10B — AWS S3 Configuration
+Step 10B.5.2 — Access Key Description
+
+Description tag : StreamingApp S3 application access
+
+Then click:
+Create access key
+
+-------------- 
+
+PHASE 10B
+Step 10B.6 — Update StreamingApp Configuration
+
+---------------------- 
+
+We need to update the project so the application knows about the S3 bucket.
+
+10B.6.1 — Open your project
+
+
+Run: git status
+
+----------------- 
+
+PHASE 10B — Step 10B.6
+
+Final .gitignore change
+
+We only need to add protection for AWS credential files/directories.
+Go to the very bottom of your existing .gitignore and add the below code and save
+
+add:
+# AWS credentials
+.aws/
+
+---------- 
+
+PHASE 10B — Step 10B.7
+Update .env.example
+Change: AWS_S3_BUCKET=your_bucket_name to AWS_S3_BUCKET=streamingapp-sandhya-259072552251-us-east-1-an
+
+
+-------------- 
+
+PHASE 10B — AWS S3 Configuration
+
+
+Step 10B.8 — Update k8s/config.yaml
+
+---------- 
+
+
+Note: We already confirmed your .env.example contains the AWS variables, so we only changed the bucket name.
+
+----------------------- 
+
+Replace the creent file with the below code and save:
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: streamingapp-config
+data:
+  MONGO_URI: "mongodb://mongo:27017/streamingapp"
+  CLIENT_URLS: "http://localhost:31142"
+  AUTH_PORT: "3001"
+  STREAMING_PORT: "3002"
+  ADMIN_PORT: "3003"
+  CHAT_PORT: "3004"
+  AWS_REGION: "us-east-1"
+  AWS_S3_BUCKET: "streamingapp-sandhya-259072552251-us-east-1-an"
+  AWS_CDN_URL: ""
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: streamingapp-secret
+type: Opaque
+stringData:
+  JWT_SECRET: "changeme" 
+
+  ====================== 
+
+  Notes:
+
+  Why we're doing it this way
+The non-sensitive S3 settings go into the ConfigMap:
+AWS_REGION
+AWS_S3_BUCKET
+AWS_CDN_URL
+
+The actual:
+AWS_ACCESS_KEY_ID
+AWS_SECRET_ACCESS_KEY
+
+will not go here. We will handle those as secrets later. 
+
+This matches the deployment guide's distinction between application configuration and AWS credentials.
+
+----------- 
+
+Phase 10B is complete.
+
+----------------- 
+
+====================== 
+
+PHASE 11 — Jenkins CI/CD 
+
+================== 
+
+Step 11.1 — Create Jenkinsfile 
+
+11.1.1 Create the file
+
+In VS Code Explorer: Right-click the root StreamingApp folder → New File
+
+Name it: Jenkinsfile
+
+================= 
+
+Step 11.1.1 — Paste the Jenkins pipeline
+Click inside the empty Jenkinsfile and paste:
+
+
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION = 'us-east-1'
+        AWS_ACCOUNT_ID = '759910672539'
+        ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+
+        AUTH_IMAGE = "${ECR_REGISTRY}/streamingapp-auth"
+        STREAMING_IMAGE = "${ECR_REGISTRY}/streamingapp-streaming"
+        ADMIN_IMAGE = "${ECR_REGISTRY}/streamingapp-admin"
+        CHAT_IMAGE = "${ECR_REGISTRY}/streamingapp-chat"
+        FRONTEND_IMAGE = "${ECR_REGISTRY}/streamingapp-frontend"
+
+        IMAGE_TAG = "${BUILD_NUMBER}"
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo 'Running StreamingApp validation...'
+                sh 'node --version'
+                sh 'npm --version'
+            }
+        }
+
+        stage('Build Docker Images') {
+            steps {
+                sh '''
+                    docker build -t ${AUTH_IMAGE}:${IMAGE_TAG} ./backend/authService
+                    docker build -t ${STREAMING_IMAGE}:${IMAGE_TAG} ./backend/streamingService
+                    docker build -t ${ADMIN_IMAGE}:${IMAGE_TAG} ./backend/adminService
+                    docker build -t ${CHAT_IMAGE}:${IMAGE_TAG} ./backend/chatService
+                    docker build -t ${FRONTEND_IMAGE}:${IMAGE_TAG} ./frontend
+                '''
+            }
+        }
+
+        stage('Login to Amazon ECR') {
+            steps {
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'aws-ecr-credentials',
+                        usernameVariable: 'AWS_ACCESS_KEY_ID',
+                        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+                    )
+                ]) {
+                    sh '''
+                        aws ecr get-login-password --region ${AWS_REGION} |
+                        docker login --username AWS --password-stdin ${ECR_REGISTRY}
+                    '''
+                }
+            }
+        }
+
+        stage('Push Images to ECR') {
+            steps {
+                sh '''
+                    docker push ${AUTH_IMAGE}:${IMAGE_TAG}
+                    docker push ${STREAMING_IMAGE}:${IMAGE_TAG}
+                    docker push ${ADMIN_IMAGE}:${IMAGE_TAG}
+                    docker push ${CHAT_IMAGE}:${IMAGE_TAG}
+                    docker push ${FRONTEND_IMAGE}:${IMAGE_TAG}
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'StreamingApp CI/CD pipeline completed successfully.'
+        }
+
+        failure {
+            echo 'StreamingApp pipeline failed. Check the Jenkins console output.'
+        }
+    }
+}
+
+------------- 
+
+Press: Ctrl + S
+
+------------ 
+
+Step 11.2 — Verify the file
+In the PowerShell terminal at: PS C:\Users\sandy\StreamingApp>
+
+Run: git status
+
+<img width="563" height="407" alt="image" src="https://github.com/user-attachments/assets/71c948ff-89a9-4810-bb2f-c8bcc88053bd" />
+
+
+
+----------------- 
+
+PHASE 11 — Jenkins CI/CD
+
+Step 11.2 — Commit the project changes to GitHub
+
+11.2.1 — First verify there are no real secrets
+
+Run: Get-ChildItem -Force 
+
+Run: git diff -- .env.example 
+
+
+
+<img width="483" height="280" alt="image" src="https://github.com/user-attachments/assets/1b0528b0-0bdd-4b70-925f-1470d7164d64" />
+
+
+<img width="674" height="183" alt="image" src="https://github.com/user-attachments/assets/6f055fee-abe1-4a95-b6b4-eca71706b152" /> 
+
+----------- 
+
+Step 11.2.2 — Add all our project files
+Run: git add .env.example .gitignore Jenkinsfile k8s helm Screenshots
+
+
+
+git status
+
+
+<img width="680" height="218" alt="image" src="https://github.com/user-attachments/assets/2b433b01-4a18-4380-aaad-c30166d46497" />
+
+
+
+
+<img width="636" height="415" alt="image" src="https://github.com/user-attachments/assets/4a295be8-5a56-40b7-bec2-c5c2fad56536" />
+
+
+
+
+---------------------------- 
+
+
+
+Step 11.2.4 — Push to GitHub
+Run: git push origin main
 
 
 
@@ -4089,20 +4557,39 @@ Click Create Bucket:
 
 
 
+======================= 
+
+PHASE 15 — Step 15.1: Save All Current Work to GitHub
+
+----------------- 
+
+You have already completed: git add .env.example .gitignore Jenkinsfile k8s helm Screenshots
+
+-------------- 
+
+Step 15.1.1 — Commit
+Run: git commit -m "Add Kubernetes Helm Jenkins and AWS deployment configuration"
+
+
+Step 15.1.2 — Verify
+Immediately run: git status
+
+
+Step 15.1.3 — Push to GitHub
+Then run: git push origin main
 
 
 
+Step 1 — Pull the remote changes with rebase 
+As the GitHub has a newer commit that your local branch doesn't have.
+Run: git pull --rebase origin main
+
+then run: git push origin main
 
 
+Phase 15 — GitHub synchronization COMPLETE
 
-
-
-
-
-
-
-
-
+======================= 
 
 
 
