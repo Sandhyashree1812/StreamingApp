@@ -4880,15 +4880,143 @@ Run: sudo systemctl status jenkins --no-pager
 
 
 Step 11.15 — Check the Jenkins node
-Refresh your Jenkins browser page:
-http://3.90.255.63:8080
+
+1. Refresh your Jenkins browser page:
+http://54.208.19.7:8080
+
+2. Login and in dashboard click built in node, click make the Bring the node online.
+3. Configure AWS credentials in Jenkins:
+
+   After the node is online:
+1. Open Manage Jenkins → Credentials.
+2. Add a credential of type Username with password.
+
+   
+3. Step 1: Open IAM
+   1. Open the AWS IAM Console.
+   2. In the left menu, click Users.
+   3. Create the user
+   4. Click Create user (top right).
+   5. Enter this username: streamingapp-jenkins-user, click next.
+   6. Assign permissions
+     Choose Attach policies directly and attach: AmazonEC2ContainerRegistryPowerUser
+     click next, and click create user.
+
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/dea9d64f-b59f-4105-a300-588abd926cf2" />
+
+
+  --------------------
+
+   Notes:
+     
+   This AWS-managed policy provides ECR permissions for the image-push workflow. It is broader than a narrowly scoped custom policy, but suitable for getting the assignment pipeline running. We can restrict it later.
+
+ ------------------
+
+4: Create access keys
+After the user is created:
+1. Click streamingapp-jenkins-user.
+2. Open Security credentials.
+3. Scroll to Access keys.
+4. Click Create access key.
+5. Select Other as the use case, then continue.
+6. Enter the description Jenkins-ECR-Pipeline.
+7. Create the key.
+On the final page, AWS will show:
+- Access key ID
+- Secret access key
+Copy both and store them securely. AWS will not show the secret key again after you leave that page.
 
 
 
 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/7f539d4d-2bb8-4fce-bc49-97b4676aaeaa" />
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/a15accfb-1c51-477c-82a9-4757eb23035e" />
+
+
+5. Add the credentials to Jenkins
+ Once the keys are ready, return to Jenkins and open:
+ Manage Jenkins → Credentials → System → Global credentials → Add Credentials
+ Enter:
+ Kind: Username with password
+ Username:	AWS Access key ID
+ Password:	AWS Secret access key
+ ID:	aws-ecr-credentials
+ Description:	AWS ECR credentials for StreamingApp
+ Click Create.
+
+ This credential ID must match the ID already used in your Jenkinsfile.
+
+7. Set the credential ID to exactly aws-ecr-credentials.
+8. Save.
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/b659a16b-9d3d-45b3-a84a-f1f544f4ce9c" />
+
+
+Step 1: Check the existing credential
+On your current screen:
+1. Click the pencil (Edit) icon on the right of aws-ecr-credentials.
+2. Check the credential type and username.
+3. Confirm the username is the AWS Access key ID for an IAM identity with ECR push permissions.
+Jenkins masks the password, so you won't be able to retrieve the secret access key from this screen.
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/878f6fbc-b52d-4d68-b335-a683a4b3d32b" />
+
+Close it after verifying:
+Click the X at the top-right of the dialog to close it. Don't click Change Password or Save yet.
+
+
+------------- 
+
+2. Verify the IAM user in AWS
+Switch to your AWS IAM browser tab.
+1. Open IAM → Users.
+2. Select streamingapp-jenkins-user if you created it.
+3. Open Permissions.
+4. Check whether AmazonEC2ContainerRegistryPowerUser is attached.
+
+   <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/f63a8e65-ed3c-425e-83ae-039adc28b523" />
 
 
 
+5. Open Security credentials → Access keys and check whether the Access key ID matches the username shown in Jenkins.
+
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/0cccb0ec-3e23-489c-a849-466acb8e8227" />
+
+---------------------- 
+
+Step 11.16: Connect Jenkins to GitHub
+Now we'll configure Jenkins to fetch your StreamingApp project from GitHub.
+
+Step 1: Open Jenkins Dashboard
+Switch to the Jenkins browser tab at:
+http://54.208.19.7:8080
+Click Dashboard.
+
+Step 2: Create a Pipeline job
+1. Click New Item on the left.
+2. Enter the job name:
+StreamingApp-CI-CD
+3. Select Pipeline.
+4. Click OK.
+
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/2d66e930-198a-4da2-ab9f-60d55c2bbfa5" />
+
+
+Step 3: Configure the pipeline
+On the job configuration page, scroll down to the Pipeline section.
+Set:
+- Definition: Pipeline script from SCM
+- SCM: Git
+- Repository URL: the HTTPS URL of your actual StreamingApp GitHub repository
+- Credentials: leave as - none - if the repository is public
+- Branch Specifier: */main
+- Script Path: Jenkinsfile
+Your previously created repository flask-ci-cd-assignment is for your Flask project, so do not use that URL for StreamingApp. Use the repository containing your StreamingApp code and root-level Jenkinsfile.
 
 
 
