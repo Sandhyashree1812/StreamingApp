@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         AWS_REGION = 'us-east-1'
-        AWS_ACCOUNT_ID = '759910672539'
+        AWS_ACCOUNT_ID = '259072552251'
         ECR_REGISTRY = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 
         AUTH_IMAGE = "${ECR_REGISTRY}/streamingapp-auth"
