@@ -5016,8 +5016,178 @@ Set:
 - Credentials: leave as - none - if the repository is public
 - Branch Specifier: */main
 - Script Path: Jenkinsfile
-Your previously created repository flask-ci-cd-assignment is for your Flask project, so do not use that URL for StreamingApp. Use the repository containing your StreamingApp code and root-level Jenkinsfile.
 
+  Click Save. Wait for the StreamingApp-CI-CD job page to open. Do not click Build Now yet.
+
+  Phase 11 — Step 11.17: Check the Jenkins agent
+
+Before building, we need to ensure the Built-In Node is online and the required tools are installed.
+
+Step 1: Check the node status
+1. Click the Jenkins logo at the top-left to return to the dashboard.
+2. Look at Build Executor Status.
+3. Check whether Built-In Node says online or offline.
+Step 2: If the node is online
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/58dc2390-e31e-4650-9b4a-879c97a0e0ad" />
+
+
+Phase 11 — Step 11.6: Install Node.js and npm
+
+1. Return to your EC2 SSH terminal (the black terminal where you see [ec2-user@ip-172-31-39-226 ~]$).
+Run:
+curl -fsSL https://rpm.nodesource.com/setup_22.x | sudo bash -
+
+After that finishes, run:
+sudo dnf install -y nodejs
+
+2. Verify the installation
+node --version
+npm --version
+
+<img width="668" height="377" alt="image" src="https://github.com/user-attachments/assets/b0945c6d-1bd0-49c0-8480-16eb1123919a" />
+
+
+<img width="665" height="420" alt="image" src="https://github.com/user-attachments/assets/7c8ef735-7cb3-422a-a303-d40d317a56dd" />
+
+
+
+<img width="371" height="64" alt="image" src="https://github.com/user-attachments/assets/dd2c0c62-77e1-4c1b-a518-f3a39798cc28" />
+
+
+------------------------------- 
+
+Phase 11 — Step 11.18: Check Docker access
+
+Since your pipeline builds five Docker images and pushes them to Amazon ECR, run:
+sudo systemctl status docker
+
+
+Then check whether Jenkins can access Docker:
+sudo -u jenkins docker version
+
+
+
+
+----------------------------------------- 
+
+Step 11.19 — Install Node.js and npm
+
+In the same EC2 terminal, run the following commands one at a time.
+1. Configure the Node.js 22 repository
+curl -fsSL https://rpm.nodesource.com/setup_22.x | sudo bash -
+
+2. Install Node.js and npm
+sudo dnf install -y nodejs
+
+
+3. Verify both versions
+node --version
+npm --version
+
+
+<img width="666" height="315" alt="image" src="https://github.com/user-attachments/assets/4f0e48df-96b9-4e1e-9bd6-1b315e33c6bf" />
+
+
+Phase 11 — Step 11.20: Verify the tools as the Jenkins user
+
+You are already connected to EC2. Run these four commands in the SSH terminal:
+sudo -u jenkins node --version
+sudo -u jenkins npm --version
+sudo -u jenkins git --version
+sudo -u jenkins aws --version
+------------------- 
+
+Step 11.21 — Run the first build
+After verifying Node.js and npm:
+1. Open Jenkins at http://54.208.19.7:8080.
+2. Open StreamingApp-CI-CD.
+3. Click Build Now.
+4. Click the new build number.
+5. Open Console Output.
+The first build will tell us whether the Git checkout, Node.js checks, Docker builds, and ECR authentication are all configured correctly.
+
+-------------- 
+
+Step 11.22
+Fix the streaming service Dockerfile
+
+--------------
+
+Replace the contents of backend/streamingService/Dockerfile with this:
+
+FROM node:18-alpine AS base
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install --omit=dev
+
+COPY . .
+ENV NODE_ENV=production
+EXPOSE 3002
+
+CMD ["npm", "run", "start"]
+
+---------------  
+
+Open a new local PowerShell terminal in VS Code:
+Run:
+git status
+
+Step 4 — Commit and push
+In that local PowerShell terminal, run:
+
+Run:
+git add backend/streamingService/Dockerfile
+git commit -m "Fix streaming service Docker build context"
+git push origin main
+
+---------------------- 
+
+Step 21.1 — Open the admin Dockerfile
+
+In VS Code, open:
+C:\Users\sandy\StreamingApp\backend\adminService\Dockerfile
+
+
+
+Replace the contents with:
+FROM node:18-alpine AS base
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install --omit=dev
+
+COPY . .
+ENV NODE_ENV=production
+EXPOSE 3003
+
+CMD ["npm", "run", "start"]
+
+------------------ 
+
+Save with Ctrl + S. 
+
+-------------- 
+
+Step 3 — Check the chat Dockerfile too
+Open:
+backend/chatService/Dockerfile
+If it contains COPY chatService/package*.json ./ or COPY chatService/. ./, it has the same issue. Correct it to use:
+
+4. Commit and push to GitHub
+Run these commands in your local PowerShell terminal, not the EC2 SSH terminal:
+cd C:\Users\sandy\StreamingApp
+
+git add backend/adminService/Dockerfile backend/chatService/Dockerfile
+
+git commit -m "Fix admin and chat Docker build contexts"
+
+git pull --rebase origin main
+
+git push origin main
 
 
 
