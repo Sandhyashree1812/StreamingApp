@@ -1,11 +1,13 @@
+
 FROM node:18-alpine AS base
 
-WORKDIR /app/chatService
+WORKDIR /app
 
-COPY chatService/package*.json ./
-RUN npm install --production
+COPY package*.json ./
+RUN npm install --omit=dev
 
-COPY chatService/. ./
+COPY . .
+
 ENV NODE_ENV=production
 EXPOSE 3004
 
