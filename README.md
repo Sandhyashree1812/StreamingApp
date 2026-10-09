@@ -5190,13 +5190,47 @@ git pull --rebase origin main
 git push origin main
 
 
+Step 2: Create the five ECR repositories
+Before running Jenkins, open Amazon ECR Repositories and create these repositories in your current account if you haven't already:
+- streamingapp-auth
+- streamingapp-streaming
+- streamingapp-admin
+- streamingapp-chat
+- streamingapp-frontend
+Choose Private and keep the default settings for each.
+
+Step 3: Commit and push the Jenkinsfile
+Run in your VS Code PowerShell terminal:
+git add Jenkinsfile
+git commit -m "Use current AWS account for ECR"
+git pull --rebase origin main
+git push origin main
+
+Step 4: Run Jenkins again
+1. Open Jenkins → StreamingApp-CI-CD.
+2. Click Build Now.
+3. Open the newest build → Console Output.
+
+Jenkins build is successful:
+
+   <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/1175b9fa-81cf-4d40-9633-d985155e4bea" />
 
 
 
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/e1ed9bc9-8e01-4637-bf0e-a23accf675a6" />
 
 
+Jenkins CI/CD pipeline has completed successfully! 
 
+===================================================  
 
+ECR Streaming app repostries:
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/5f09a1e5-0a95-46ca-a993-75d8e74b501d" />
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/c9ce3609-d3f1-4438-9970-29e58844b2fd" />
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/df261ad6-36d0-4a47-94bd-897a33d19bec" />
 
 ======================= 
 
